@@ -3,573 +3,1909 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KK Line Data Collector V1.6</title>
+    <title>Easy Html Editer v1.0</title>
+    <!-- Ace Editor Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.15.2/ace.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.15.2/ext-language_tools.min.js"></script>
+    <!-- JS-Beautify for Magic Wand (Formatting) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
-            /* DARK MODE (DEFAULT) */
+            /* Default Theme: Pro Blue Dark */
             --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --text-main: #ffffff;
-            --text-sec: #b3b3b3;
-            --accent: #FFC107;
-            --safe: #4CAF50;
-            --danger: #FF5252;
-            --line-color: #333;
-            --modal-bg: #1e1e1e;
-            --btn-bg: #2C2C2C;
+            --surface-color: #1e1e1e;
+            --header-color: #1a1a1a;
+            --border-color: #333333;
+            --text-color: #e0e0e0;
+            --text-muted-color: #a0a0a0;
+            --editor-bg: #1e1e1e;
+            --input-bg: #2a2a2a;
+            --input-border: #444444;
+            --accent-color: #007aff; /* Pro Blue */
+            --accent-hover-color: #005ecb;
+            --accent-success-color: #30d158;
+            --accent-danger-color: #ff453a;
+            --accent-warning-color: #ff9f0a;
         }
 
-        /* LIGHT MODE OVERRIDES */
-        body.light-mode {
-            --bg-color: #f0f2f5;
-            --card-bg: #ffffff;
-            --text-main: #121212;
-            --text-sec: #555555;
-            --accent: #007bff; /* Blue for visibility */
-            --line-color: #ccc;
-            --modal-bg: #ffffff;
-            --btn-bg: #e0e0e0;
+        body.light-theme {
+            --bg-color: #f5f5f5;
+            --surface-color: #ffffff;
+            --header-color: #ffffff;
+            --border-color: #e0e0e0;
+            --text-color: #222222;
+            --text-muted-color: #666666;
+            --editor-bg: #ffffff;
+            --input-bg: #ffffff;
+            --input-border: #cccccc;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* --- Premium Slim Scrollbar --- */
+        ::-webkit-scrollbar {
+            width: 5px; height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(150, 150, 150, 0.2);
+            border-radius: 20px;
+            background-clip: content-box;
+            border: 1px solid transparent;
+            transition: all 0.3s ease;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-color);
+        }
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(150, 150, 150, 0.2) transparent;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding-bottom: 20px;
-            user-select: none;
-            transition: background-color 0.3s, color 0.3s;
+            background: var(--bg-color); color: var(--text-color);
+            overflow: hidden; display: flex; flex-direction: column; height: 100vh;
+            scrollbar-gutter: stable;
         }
 
-        /* Header */
+        
+
+        /* --- Header --- */
         .header {
-            background-color: var(--card-bg);
-            padding: 15px; position: sticky; top: 0; z-index: 100;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 3px solid var(--accent);
+            background: rgba(26, 26, 26, 0.8); /* Default Dark Glass */
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            border-bottom: 2px solid var(--accent-color);
+            padding: 0 20px;
+            display: flex; justify-content: space-between; align-items: center; height: 50px; flex-shrink: 0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 1001;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
         }
-        .header h1 { margin: 0; font-size: 1.1rem; }
         
-        .header-right { display: flex; align-items: center; gap: 15px; }
-        .settings-icon { font-size: 1.5rem; cursor: pointer; }
-
-        .gps-status { font-size: 0.7rem; color: var(--danger); font-weight: bold; }
-        .gps-active { color: var(--safe); }
-        .coord-mini { font-family: monospace; font-size: 0.65rem; text-align: right; line-height: 1.1; }
-
-        /* Direction Switch */
-        .dir-switch {
-            display: flex; background: var(--btn-bg); margin: 10px;
-            border-radius: 8px; overflow: hidden; border: 1px solid var(--line-color);
+        /* --- Light Mode Header Fix (Day Theme Ilaz) --- */
+        body.light-theme .header {
+            background: rgba(255, 255, 255, 0.85); /* Frosted White */
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); /* Soft Shadow */
+            border-bottom: 2px solid var(--accent-color);
         }
-        .dir-btn {
-            flex: 1; padding: 12px; text-align: center;
-            color: var(--text-sec); font-weight: bold; cursor: pointer;
-            transition: 0.2s;
+        /* Fix Hamburger Menu Box in Light Mode */
+        body.light-theme .hamburger-menu {
+            background: transparent !important;
+            color: #333 !important;
         }
-        .dir-btn.active { background: var(--accent); color: #000; }
+        .header h1 {
+            font-size: 20px; font-weight: bold; letter-spacing: 0.5px;
+            background: linear-gradient(90deg, var(--accent-color), #61dafb);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; text-fill-color: transparent;
+            text-shadow: 0 0 15px rgba(var(--accent-color-rgb, 0, 122, 255), 0.2);
+        }
+        .theme-toggle {
+            background: var(--input-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 5px 15px; border-radius: 4px; cursor: pointer; transition: background 0.3s; font-size: 12px;
+        }
+        
+        /* --- Buttons --- */
+        .btn {
+            background: linear-gradient(145deg, var(--accent-color), var(--accent-hover-color)); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: white; padding: 10px 16px; border-radius: 8px;
+            cursor: pointer; font-size: 13px; 
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); 
+            white-space: nowrap; display: inline-flex;
+            align-items: center; justify-content: center; gap: 8px; font-weight: 600;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        .btn:hover { 
+            filter: brightness(1.15);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.35);
+            transform: translateY(-1.5px);
+        }
+        .btn:active {
+            transform: translateY(1px) scale(0.97);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            filter: brightness(0.9);
+        }
+        .btn-action-primary { min-width: 130px; letter-spacing: 0.3px; }
+        .btn:disabled { background: #555; color: #999; cursor: not-allowed; }
+        body.light-theme .btn:disabled { background: #e0e0e0; color: #aaa; }
+        .btn-danger { background: var(--accent-danger-color); }
+        .btn-success { background: var(--accent-success-color); }
+        .btn-warning { background: var(--accent-warning-color); }
 
-        /* Timeline */
-        .timeline-container { position: relative; padding: 10px 15px; max-width: 600px; margin: 0 auto; }
-        .track-line { position: absolute; left: 30px; top: 0; bottom: 0; width: 4px; background: var(--line-color); z-index: 0; }
+        /* --- Toolbar --- */
+        .toolbar {
+            background: var(--surface-color); 
+            border-bottom: 1px solid var(--border-color); 
+            padding: 8px 15px;
+            display: flex; gap: 10px; flex-wrap: wrap;
+            box-shadow: inset 0px -5px 15px rgba(0,0,0,0.2);
+        }
+        .input-container { flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 4px; }
+        .input-container label { font-size: 11px; color: var(--accent-color); font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .textarea-wrapper { position: relative; width: 100%; }
+        .input-container textarea {
+            width: 100%; height: 62px;
+            resize: none; font-family: 'Monaco', 'Menlo', monospace; 
+            background: rgba(0, 0, 0, 0.3); 
+            border: 1.2px solid var(--input-border); 
+            color: #ffffff; padding: 8px 30px 8px 10px;
+            border-radius: 6px; font-size: 12px;
+            transition: all 0.2s ease; outline: none;
+        }
+        
+        /* Light Mode Input Fix */
+        body.light-theme .input-container textarea {
+            background: rgba(0, 0, 0, 0.06); /* हल्का ग्रे */
+            border-color: rgba(0, 0, 0, 0.2);
+            color: #333333; /* गहरा काला टेक्स्ट */
+        }
+        body.light-theme .input-container textarea:focus {
+            background: rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 8px rgba(0, 122, 255, 0.2);
+        }
+        .input-container textarea:focus {
+            border-color: var(--accent-color);
+            background: rgba(0, 0, 0, 0.45);
+            box-shadow: 0 0 12px rgba(var(--accent-color-rgb, 0, 122, 255), 0.4); /* Pro Neon Glow */
+            transform: translateY(-1.5px);
+        }
+        .btn-clear {
+            position: absolute; top: 50%; transform: translateY(-50%); right: 5px; background: none; border: none;
+            color: #999; font-size: 20px; cursor: pointer; z-index: 5;
+        }
+        .btn-clear:hover { color: var(--text-color); }
 
-        .station-card {
-            background: var(--card-bg); margin-bottom: 15px; margin-left: 30px;
-            padding: 15px; border-radius: 8px; position: relative; 
-            border-left: 5px solid var(--text-sec);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        /* --- Editor & Preview Layout --- */
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .editor-section, .preview-section { display: flex; flex-direction: column; width: 50%; height: 100%; }
+        .section-header {
+            background: #333; padding: 8px 15px; font-size: 13px; font-weight: 500;
+            border-bottom: 1px solid var(--border-color); flex-shrink: 0; display: flex; justify-content: space-between; align-items: center;
+        }
+        body.light-theme .section-header { background: #f0f0f0; }
+        
+        .btn-icon {
+            background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-muted-color);
+            padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; justify-content: center;
+        }
+        .btn-icon:hover { 
+            background: var(--accent-color); color: white; border-color: var(--accent-color); 
+            transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-icon.danger-icon:hover { 
+            background: var(--accent-danger-color); border-color: var(--accent-danger-color); 
+            box-shadow: 0 4px 10px rgba(255, 69, 58, 0.3);
+        }
+
+        .editor-container { flex: 1; position: relative; overflow: hidden; }
+        .code-editor { height: 100%; width: 100%; }
+
+        /* --- Ace Editor Customization --- */
+        .ace_gutter { background: rgba(0,0,0,0.1) !important; color: var(--text-muted-color) !important; border-right: 1px solid rgba(255,255,255,0.05); }
+        .ace_active-line { background: rgba(150, 150, 150, 0.1) !important; }
+        .ace_gutter-active-line { background: var(--accent-color) !important; color: white !important; }
+        .ace_cursor { border-left: 2px solid var(--accent-color) !important; }
+        .ace_marker-layer .ace_selection {
+            background: var(--accent-color) !important;
+            opacity: 0.5 !important; /* रंग को गहरा किया */
+            border: 2px solid var(--accent-color) !important; /* बॉर्डर जोड़ा */
+            box-shadow: 0 0 10px var(--accent-color) !important; /* ग्लो इफ़ेक्ट ताकि दूर से दिखे */
+            border-radius: 3px;
+        }
+        .ace_indent-guide { opacity: 0.3; }
+
+        .preview-section { border-left: 1px solid var(--border-color); }
+        .preview-header {
+            background: #333; padding: 8px 15px; font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--border-color);
+            display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+        }
+        body.light-theme .preview-header { background: #f0f0f0; }
+        .live-indicator { color: var(--accent-success-color); font-size: 11px; display: flex; align-items: center; gap: 5px; }
+        .live-dot { width: 8px; height: 8px; background: var(--accent-success-color); border-radius: 50%; animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        .preview-frame { 
+            flex: 1; border: none; background: white; 
+            width: 100%; height: 100%; 
+            transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin: 0 auto; /* सेंटर में रखने के लिए */
+        }
+        
+        /* Device Switcher Buttons */
+        .device-switcher { display: flex; gap: 5px; background: rgba(0,0,0,0.2); padding: 3px; border-radius: 8px; }
+        .device-btn {
+            background: transparent; border: none; color: var(--text-muted-color);
+            width: 32px; height: 32px; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: 0.3s;
+        }
+        .device-btn.active { background: var(--accent-color); color: white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .device-btn:hover:not(.active) { background: rgba(255,255,255,0.1); }
+
+        .hidden-file-input { display: none; }
+        
+        .fullscreen-btn {
+            background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 4px 10px;
+            border-radius: 4px; cursor: pointer; font-size: 14px;
+        }
+        body.fullscreen-preview .header, body.fullscreen-preview .toolbar, body.fullscreen-preview .tab-bar,
+        body.fullscreen-preview .editor-section, body.fullscreen-preview .footer-toolbar, body.fullscreen-preview .side-panel { display: none; }
+        body.fullscreen-preview .main-container { position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 2000; }
+        body.fullscreen-preview .preview-section { width: 100%; height: 100%; border-left: none; }
+        body.side-panel-open { overflow: hidden; }
+        .fullscreen-btn .fa-compress { display: none; }
+        body.fullscreen-preview .fullscreen-btn .fa-expand { display: none; }
+        body.fullscreen-preview .fullscreen-btn .fa-compress { display: inline-block; }
+
+        /* AJ New: Navigation Container with Pop-in Animation */
+        @keyframes searchPop {
+            0% { transform: scale(0.5); opacity: 0; }
+            70% { transform: scale(1.05); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .find-nav-container { 
+            display: none; 
+            align-items: center; 
+            gap: 12px; /* बटन्स और बैज के बीच सुंदर गैप */
+            background: transparent;
+            padding: 0;
+            border: none;
+            animation: searchPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            margin-left: 10px;
+        }
+
+        #matchCounter {
+            font-size: 12px; /* पढ़ने में आसान */
+            font-weight: 700;
+            color: white !important;
+            background: var(--accent-color);
+            padding: 0 15px; /* प्रीमियम फील के लिए साइड स्पेस */
+            border-radius: 6px; /* बटन्स के कोनों के साथ परफेक्ट मैच */
+            letter-spacing: 0.8px;
+            white-space: nowrap;
+            display: flex; /* वर्टिकल सेंटर के लिए */
+            align-items: center;
+            height: 34px; /* बटन्स की हाइट के एकदम बराबर */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: all 0.3s ease;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        .btn-nav {
+            background: transparent; 
+            border: 1.5px solid var(--accent-color); 
+            color: var(--accent-color);
+            width: 34px; height: 34px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 6px; /* वापस चोकोर (Square) */
             cursor: pointer;
+            transition: all 0.2s ease;
+            outline: none;
         }
-        .station-card:active { transform: scale(0.98); }
-        .station-dot {
-            position: absolute; left: -37px; top: 50%; transform: translateY(-50%);
-            width: 14px; height: 14px; background: var(--text-sec);
-            border-radius: 50%; border: 3px solid var(--bg-color); z-index: 1;
+
+        /* AJ Fix: Sticky Toggle State */
+        .btn-nav.toggled {
+            background: var(--accent-color) !important;
+            color: white !important;
         }
-        .station-card.saved-some { border-left-color: var(--accent); }
-        .station-card.saved-some .station-dot { background: var(--accent); }
 
-        .stn-header { display: flex; justify-content: space-between; align-items: center; }
-        .stn-name { font-size: 1.1rem; font-weight: bold; }
-        .stn-km { font-size: 0.9rem; color: var(--accent); font-family: monospace; font-weight: bold;}
-        .stn-type { font-size: 0.7rem; color: var(--text-sec); margin-top: 2px; text-transform: uppercase; }
+        .btn-nav:active { transform: scale(0.9); }
 
-        .data-badges { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
-        .badge { font-size: 0.65rem; background: var(--btn-bg); padding: 2px 5px; border-radius: 3px; color: var(--text-sec); }
-        .badge.done { background: var(--safe); color: #fff; }
+        .btn-nav:disabled { opacity: 0.3; cursor: not-allowed; border-color: var(--text-muted-color); color: var(--text-muted-color); }
+        
+        #replaceAllBtn { display: none; margin-left: 10px; }
+        
+        /* --- Universal Side Panel --- */
+        .side-panel {
+            position: fixed; top: 0; right: -320px; width: 280px; height: 100vh; 
+            background: rgba(30, 30, 30, 0.85); /* Premium Glass Look */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-left: 1px solid rgba(255,255,255,0.1); 
+            box-shadow: -10px 0 30px rgba(0,0,0,0.5); z-index: 2000;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            display: flex; flex-direction: column;
+        }
+        body.light-theme .side-panel { background: rgba(255, 255, 255, 0.85); }
+        .side-panel.open { right: 0; }
+        .side-panel-header {
+            background: rgba(0,0,0,0.2); padding: 18px 20px; display: flex; justify-content: space-between;
+            align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
+        }
+        .side-panel-header h3 { font-size: 18px; font-weight: 700; color: var(--accent-color); letter-spacing: 0.5px; }
+        .side-panel .btn-close { background: rgba(255,255,255,0.05); border: none; color: var(--text-color); width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.3s; }
+        .side-panel .btn-close:hover { background: var(--accent-danger-color); color: white; transform: rotate(90deg); }
+        .side-panel-content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .side-panel .btn { 
+            width: 100%; justify-content: flex-start; padding: 12px 15px; 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); 
+            color: var(--text-color); /* टेक्स्ट का रंग थीम के हिसाब से बदलेगा */
+            border-radius: 12px; font-weight: 500;
+        }
+        /* Light Mode में बटनों को गहरा (Darker) करना */
+        body.light-theme .side-panel .btn {
+            background: rgba(0,0,0,0.05); /* हल्का काला टिंट */
+            border-color: rgba(0,0,0,0.1);
+            color: #333;
+        }
+        body.light-theme .side-panel .btn:hover { background: rgba(0,0,0,0.1); }
+        .side-panel .btn i { width: 25px; font-size: 16px; }
+        .side-panel .btn i.fa-undo { color: #ff9f0a; }
+        .side-panel .btn i.fa-redo { color: #30d158; }
+        .side-panel .btn i.fa-folder-open { color: #007aff; }
+        .side-panel .btn i.fa-download { color: #32ade6; }
+        .side-panel .btn i.fa-external-link-alt { color: #af52de; }
+        .side-panel .btn i.fa-trash { color: #ff453a; }
 
-        /* Modals */
+        /* --- Universal Footer Toolbar --- */
+        .footer-toolbar {
+            display: none; justify-content: space-around; align-items: center; 
+            background: rgba(25, 25, 25, 0.85); 
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border-top: 1px solid rgba(255,255,255,0.1); 
+            height: 65px; flex-shrink: 0; padding: 0 12px; gap: 10px;
+            box-shadow: 0 -8px 25px rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .footer-toolbar .btn { 
+            flex: 1; padding: 12px 5px; font-size: 13px; 
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; color: var(--text-muted-color);
+        }
+        .footer-toolbar .btn:first-child {
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover-color));
+            color: white; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 1px; border: none;
+            box-shadow: 0 4px 15px var(--accent-color);
+            animation: runPulse 2s infinite;
+        }
+        @keyframes runPulse {
+            0% { box-shadow: 0 0 8px var(--accent-color); transform: scale(1); }
+            50% { box-shadow: 0 0 20px var(--accent-color); transform: scale(1.02); }
+            100% { box-shadow: 0 0 8px var(--accent-color); transform: scale(1); }
+        }
+
+        /* --- Modals --- */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.85); z-index: 1000;
-            display: none; flex-direction: column; justify-content: flex-end;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 11000; display: none; justify-content: center; align-items: center; 
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            transition: all 0.3s ease;
         }
-        .modal-overlay.open { display: flex; }
-        
-        .modal-content {
-            background: var(--modal-bg); 
-            border-top-left-radius: 20px; border-top-right-radius: 20px;
-            padding: 20px; max-height: 85vh; overflow-y: auto; 
-            border-top: 4px solid var(--accent);
-            animation: slideUp 0.3s ease-out;
+        .modal-box {
+            background: var(--surface-color); 
+            border: 1px solid rgba(255,255,255,0.1); 
+            color: var(--text-color);
+            padding: 28px; border-radius: 20px;
+            max-width: 85%; width: 340px; text-align: center;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+            animation: modernPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        @keyframes modernPop { 
+            from { opacity: 0; transform: scale(0.8) translateY(20px); } 
+            to { opacity: 1; transform: scale(1) translateY(0); } 
+        }
+        .modal-box p { margin-bottom: 24px; font-size: 15px; line-height: 1.6; font-weight: 500; opacity: 0.9; }
+        .modal-buttons { display: flex; justify-content: center; gap: 12px; }
+        .modal-buttons .btn { flex: 1; padding: 12px; border-radius: 12px; font-weight: 700; font-size: 14px; }
+        .modal-buttons .btn-secondary { 
+            background: rgba(255,255,255,0.05); 
+            color: var(--text-color); 
+            border: 1px solid rgba(255,255,255,0.1); 
+        }
+        .modal-buttons .btn-secondary:hover { background: rgba(255,255,255,0.1); transform: none; }
 
-        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--line-color); padding-bottom: 10px; }
-        .close-btn { background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;}
+        /* --- Toast System --- */
+        .toast-container {
+            position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+            z-index: 10000; display: flex; flex-direction: column; gap: 10px; pointer-events: none;
+        }
+        .toast {
+            background: rgba(20, 20, 20, 0.9); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            color: white; padding: 12px 24px; border-radius: 50px; font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1); border-bottom: 2px solid var(--accent-color);
+            animation: toastSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+        }
+        @keyframes toastSlideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.8); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .toast.fade-out { opacity: 0; transform: translateY(-20px) scale(0.9); transition: 0.5s; }
 
-        /* Signal Inputs */
-        .signal-row {
-            background: var(--btn-bg); margin-bottom: 12px; padding: 12px;
-            border-radius: 8px; border: 1px solid var(--line-color);
-            display: flex; flex-direction: column; gap: 8px;
+        /* --- Theme Chooser --- */
+        .theme-chooser { 
+            margin-top: 15px; padding: 15px; 
+            background: rgba(0,0,0,0.2); 
+            border-radius: 15px; border: 1px solid rgba(255,255,255,0.05);
         }
-        .signal-row.captured { border-color: var(--safe); background: rgba(76, 175, 80, 0.1); }
-        
-        .row-top { display: flex; justify-content: space-between; align-items: center; }
-        .signal-label { font-weight: bold; font-size: 0.95rem; }
-        
-        .row-bottom { display: flex; gap: 10px; align-items: center; }
-        
-        .km-input {
-            background: var(--bg-color); border: 1px solid var(--line-color); color: var(--text-main);
-            padding: 10px; border-radius: 5px; width: 90px; text-align: center;
-            font-family: monospace; font-weight: bold; font-size: 1rem;
-        }
-        
-        .capture-btn {
-            flex: 1; background: #444; color: white; border: none;
-            padding: 12px; border-radius: 5px; font-weight: bold;
-            display: flex; justify-content: center; gap: 5px; cursor: pointer;
-        }
-        .capture-btn.active { background: var(--safe); color: #fff; }
-
-        /* Settings Menu Items */
-        .menu-list { display: flex; flex-direction: column; gap: 10px; }
-        .menu-btn {
-            background: var(--btn-bg); color: var(--text-main); border: 1px solid var(--line-color);
-            padding: 15px; border-radius: 8px; text-align: left; font-size: 1rem;
-            display: flex; align-items: center; gap: 15px; cursor: pointer;
-        }
-        .menu-btn:active { opacity: 0.8; }
-        .menu-icon { font-size: 1.2rem; }
-
-        /* Preview Box */
-        .preview-box {
-            background: #111; color: #0f0; 
-            font-family: monospace; padding: 10px; 
-            border-radius: 5px; white-space: pre-wrap;
-            font-size: 0.7rem; overflow-x: auto;
-            max-height: 50vh; margin-bottom: 10px;
+        /* Light Mode में बॉक्स का रंग ठीक करना */
+        body.light-theme .theme-chooser {
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.1);
         }
 
-        .blink { animation: blinker 1.5s linear infinite; }
-        @keyframes blinker { 50% { opacity: 0; } }
+        .theme-chooser h4 { font-size: 11px; color: var(--text-muted-color); margin-bottom: 12px; text-align: center; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; opacity: 0.7; }
+        
+        .light-dark-toggle { display: flex; background: rgba(0,0,0,0.3); border-radius: 12px; padding: 4px; margin-bottom: 15px; border: 1px solid rgba(255,255,255,0.05); }
+        
+        /* Light Mode में टॉगल का रंग ठीक करना */
+        body.light-theme .light-dark-toggle {
+            background: rgba(0,0,0,0.05);
+            border-color: rgba(0,0,0,0.1);
+        }
+        .light-dark-toggle button {
+            flex: 1; background: transparent; border: none; color: var(--text-muted-color); padding: 10px; cursor: pointer; border-radius: 10px; transition: 0.3s;
+        }
+        .light-dark-toggle button.active { background: var(--accent-color); color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .accent-colors { 
+            display: flex; 
+            gap: 12px; 
+            overflow-x: auto; 
+            padding: 5px 5px 15px 5px; 
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
+            scroll-snap-type: x mandatory;
+        }
+        .accent-colors::-webkit-scrollbar { display: none; }
+        .color-swatch {
+            flex-shrink: 0;
+            width: 34px; height: 34px; border-radius: 10px; cursor: pointer; 
+            border: 2px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            scroll-snap-align: start;
+        }
+        .color-swatch:hover { transform: scale(1.15); filter: brightness(1.2); }
+        .color-swatch.active { 
+            border: 2px solid white; 
+            box-shadow: 0 0 15px var(--accent-color);
+            transform: scale(1.1);
+        }
+        .color-swatch:hover { transform: scale(1.1); }
+        .color-swatch.active { border-color: var(--accent-color); box-shadow: 0 0 10px var(--accent-color); }
+
+        /* --- Markers & Highlights --- */
+        .green-marker {
+            position: absolute;
+            background-color: rgba(48, 209, 88, 0.35); 
+            z-index: 20;
+            border-radius: 4px;
+            animation: highlightFlash 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        @keyframes highlightFlash {
+            0% { background-color: rgba(48, 209, 88, 0.9); transform: scale(1.02); }
+            50% { background-color: rgba(48, 209, 88, 0.5); }
+            100% { background-color: rgba(48, 209, 88, 0.3); transform: scale(1); }
+        }
+        .ace_marker-layer .ace_selection {
+            background: rgba(0, 122, 255, 0.35) !important;
+            box-shadow: 0 0 12px rgba(0, 122, 255, 0.6);
+            border-radius: 3px;
+            border: 1px solid rgba(0, 122, 255, 0.5);
+        }
+        .ace_search_marker {
+            background: rgba(255, 159, 10, 0.2) !important; 
+            border: 1px solid rgba(255, 159, 10, 0.4);
+            border-radius: 2px;
+        }
+
+        /* सर्च मैच को फोकस करने के लिए ग्लो एनीमेशन */
+        .current-match-glow {
+            position: absolute;
+            background-color: rgba(255, 159, 10, 0.5);
+            z-index: 20;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(255, 159, 10, 0.8);
+            animation: matchFocusGlow 1.5s ease-out forwards;
+        }
+        @keyframes matchFocusGlow {
+            0% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0; transform: scale(1); }
+        }
+
+        /* --- Change Counter Badge --- */
+        .change-counter {
+            font-size: 11px;
+            color: white;
+            font-weight: 800;
+            display: none;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-hover-color));
+            padding: 4px 10px;
+            border-radius: 50px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .change-counter.bump {
+            animation: counterBump 0.4s ease-out;
+        }
+        @keyframes counterBump {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); filter: brightness(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- Mobile Responsive --- */
+        @media (max-width: 768px) {
+            /* कीबोर्ड खुलने पर फालतू चीजें छिपाने के लिए */
+            body.keyboard-open .footer-toolbar, 
+            body.keyboard-open .tab-bar, 
+            body.keyboard-open .header,
+            body.keyboard-open #toolbar-slider { display: none !important; }
+            /* एडिटर को कीबोर्ड के ऊपर पूरी जगह देने के लिए */
+            body.keyboard-open .main-container { flex: 1; height: auto; }
+            body.keyboard-open .quick-symbol-bar { border-top: 1px solid var(--border-color); background: var(--surface-color); }
+
+            .header h1 { font-size: 18px; }
+            
+            /* Quick Symbol Bar Styles */
+            .quick-symbol-bar {
+                display: flex; gap: 8px; padding: 6px 10px;
+                background: var(--surface-color); border-bottom: 1px solid var(--border-color);
+                overflow-x: auto; scrollbar-width: none; -ms-overflow-style: none;
+                flex-shrink: 0;
+            }
+            .quick-symbol-bar::-webkit-scrollbar { display: none; }
+            .symbol-btn {
+                background: rgba(255,255,255,0.06); border: 1px solid var(--border-color);
+                color: var(--accent-color); padding: 6px 14px; border-radius: 8px;
+                font-family: 'Monaco', monospace; font-weight: bold; cursor: pointer; font-size: 16px;
+                transition: all 0.2s; min-width: 42px; text-align: center; border-bottom: 2px solid rgba(0,0,0,0.2);
+            }
+            .symbol-btn:active { background: var(--accent-color); color: white; transform: translateY(2px); border-bottom: 0; }
+            body.light-theme .symbol-btn { background: #fff; border-color: #ddd; }
+
+            .header .theme-toggle { display: none; }
+            .main-container { flex-direction: column; }
+            .editor-section, .preview-section { width: 100%; height: 100%; position: absolute; top: 0; left: 0; display: none; }
+            .editor-section.active, .preview-section.active { display: flex; position: relative; }
+            .preview-section { border-left: none; }
+            
+            .hamburger-menu { display: block; background: transparent; color: var(--text-color); border: none; font-size: 22px; padding: 5px; cursor: pointer; z-index: 1100; position: relative; display: flex; align-items: center; justify-content: center; }
+            
+            .tab-bar {
+                display: flex; justify-content: space-around; background: var(--surface-color);
+                border-bottom: 1px solid var(--border-color); height: 45px; flex-shrink: 0;
+            }
+            .tab-button {
+                flex: 1; background: transparent; border: none; color: var(--text-muted-color); padding: 10px 0;
+                font-size: 14px; cursor: pointer; transition: all 0.3s; border-bottom: 3px solid transparent;
+            }
+            .tab-button.active { border-bottom-color: var(--accent-color); color: var(--accent-color); }
+            
+            .toolbar { flex-direction: column; }
+            
+            /* Toolbar Slider Logic */
+            #toolbar-slider { display: block; }
+            .footer-toolbar { display: flex; }
+            .toolbar { transition: all 0.3s ease; max-height: 500px; overflow: hidden; }
+            body.toolbar-collapsed .toolbar { max-height: 0; padding-top: 0; padding-bottom: 0; border-bottom: none; }
+            body.toolbar-collapsed #toolbar-slider i { transform: rotate(180deg); }
+        }
+        
+        #toolbar-slider {
+            display: none; background: var(--surface-color); padding: 4px 0;
+            text-align: center; cursor: pointer; border-bottom: 1px solid var(--border-color);
+            color: var(--text-muted-color); position: relative; z-index: 10;
+        }
+        #toolbar-slider i { transition: transform 0.3s ease; }
 
     </style>
 </head>
 <body>
+    
 
-    <!-- HEADER -->
+    <!-- Header -->
     <div class="header">
-        <div>
-            <h1>RAIL LOG V1.6</h1>
-            <div id="gpsStatus" class="gps-status blink">Waiting for GPS...</div>
+        <h1>Easy Html Editer v1.0</h1>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="theme-toggle" onclick="toggleLightDark()" style="margin-right: 5px;">
+                <i class="fas fa-sun"></i> <span>Light Mode</span>
+            </button>
+            <button class="btn-icon" onclick="openMagicPanel()" title="AI Multi-Update" style="background: linear-gradient(135deg, #622774 0%, #c53364 100%); color: white; border: none; width: 36px; height: 36px; border-radius: 10px; box-shadow: 0 4px 15px rgba(197, 51, 100, 0.4); flex-shrink: 0;">
+                <i class="fas fa-wand-magic-sparkles" style="font-size: 16px;"></i>
+            </button>
+            <button class="hamburger-menu" onclick="toggleSidePanel()">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
-        <div class="header-right">
-            <div id="currentLatLong" class="coord-mini">
-                00.0000<br>00.0000
+    </div>
+
+    <!-- Search and Replace Toolbar -->
+    <div class="toolbar">
+        <div class="input-container">
+            <label for="findBlock" style="display: flex; justify-content: space-between; align-items: center;">
+                <span><i class="fas fa-search"></i> इस कोड को खोजें:</span> 
+                <span id="uploadedFileName" style="color: var(--accent-color); font-weight: bold; font-size: 13px;"></span>
+            </label>
+            <div class="textarea-wrapper">
+                <textarea id="findBlock" placeholder="यहाँ पुराना कोड पेस्ट करें..."></textarea>
+                <button class="btn-clear" onclick="clearInput('findBlock')" title="Clear">×</button>
             </div>
-            <div class="settings-icon" onclick="openSettings()">⚙️</div>
+            <button class="btn btn-action-primary" onclick="findAndSelectText()"><i class="fas fa-search"></i> खोजें</button>
         </div>
-    </div>
-
-    <!-- DIRECTION SWITCH -->
-    <div class="dir-switch">
-        <div class="dir-btn active" id="btn-UP" onclick="setDirection('UP')">UP (KRPU ➡ KRDL)</div>
-        <div class="dir-btn" id="btn-DN" onclick="setDirection('DN')">DN (KRDL ➡ KRPU)</div>
-    </div>
-
-    <!-- TIMELINE -->
-    <div class="timeline-container">
-        <div class="track-line"></div>
-        <div id="stationList"></div>
-    </div>
-
-    <!-- SIGNAL INPUT MODAL -->
-    <div class="modal-overlay" id="signalModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div>
-                    <h2 id="modalTitle" style="margin:0;">STATION</h2>
-                    <span id="modalSub" style="font-size: 0.8rem; color:var(--text-sec);">Signals</span>
+        <div class="input-container">
+            <label for="replaceBlock"><i class="fas fa-exchange-alt"></i> इस कोड से बदलें (Replace with this code):</label>
+            <div class="textarea-wrapper">
+                <textarea id="replaceBlock" placeholder="यहाँ नया कोड पेस्ट करें..."></textarea>
+                <button class="btn-clear" onclick="clearInput('replaceBlock')" title="Clear">×</button>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="display: flex; align-items: center;">
+                    <button class="btn btn-action-primary" onclick="replaceCodeBlock()"><i class="fas fa-magic"></i> कोड बदलें</button>
+                    <button class="btn btn-warning" id="replaceAllBtn" onclick="replaceAllCode()"><i class="fas fa-bolt"></i> सबको बदलें</button>
                 </div>
-                <button class="close-btn" onclick="closeModal('signalModal')">✖</button>
+                <span id="changeCounter" class="change-counter"></span>
             </div>
-            <div id="signalGrid"></div>
         </div>
     </div>
 
-    <!-- SETTINGS MENU MODAL -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-content" style="padding-bottom: 40px;">
-            <div class="modal-header">
-                <h2 style="margin:0;">SETTINGS</h2>
-                <button class="close-btn" onclick="closeModal('settingsModal')">✖</button>
+    <!-- Toolbar Slider Handle -->
+    <div id="toolbar-slider" onclick="toggleToolbar()">
+        <i class="fas fa-chevron-up"></i>
+    </div>
+
+    <!-- Mobile Tab Bar -->
+    <div class="tab-bar">
+        <button class="tab-button active" id="editorTabBtn" onclick="showSection('editor')">
+            <i class="fas fa-code"></i> कोड
+        </button>
+        <button class="tab-button" id="previewTabBtn" onclick="showSection('preview')">
+            <i class="fas fa-eye"></i> प्रिव्यू
+        </button>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Editor Section -->
+        <div class="editor-section active" id="editorSection">
+            <div class="section-header">
+                <div style="display: flex; align-items: center; gap: 20px;">
+                    <span><i class="fas fa-code"></i> Editor (HTML)</span>
+                    <div class="find-nav-container" id="findNavContainer">
+                        <button class="btn-nav" id="findPrevBtn" onclick="findPrev()" title="पिछला खोजें"><i class="fas fa-arrow-up"></i></button>
+                        <button class="btn-nav" id="findNextBtn" onclick="findNext()" title="अगला खोजें"><i class="fas fa-arrow-down"></i></button>
+                        <span id="matchCounter" style="font-size: 12px; margin-left: 8px; color: var(--text-muted-color);"></span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-icon" onclick="copyAllCode()" title="Copy All Code" id="copyBtn">
+                        <i class="fas fa-copy"></i>
+                    </button>
+                    <button class="btn-icon danger-icon" onclick="clearEditor()" title="Clear Editor">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
+            <div class="quick-symbol-bar" id="quickSymbolBar">
+                <button class="symbol-btn" onclick="insertSymbol('<')">&lt;</button>
+                <button class="symbol-btn" onclick="insertSymbol('>')">&gt;</button>
+                <button class="symbol-btn" onclick="insertSymbol('/')">/</button>
+                <button class="symbol-btn" onclick="insertSymbol('=')">=</button>
+                <button class="symbol-btn" onclick="insertSymbol('&quot;')">"</button>
+                <button class="symbol-btn" onclick="insertSymbol('\'')">'</button>
+                <button class="symbol-btn" onclick="insertSymbol('!')">!</button>
+                <button class="symbol-btn" onclick="insertSymbol('{')">{</button>
+                <button class="symbol-btn" onclick="insertSymbol('}')">}</button>
+                <button class="symbol-btn" onclick="insertSymbol('(')">(</button>
+                <button class="symbol-btn" onclick="insertSymbol(')')">)</button>
+                <button class="symbol-btn" onclick="insertSymbol(';')">;</button>
+            </div>
+            <div class="editor-container">
+                <div class="code-editor" id="codeEditor"><!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>मेरी वेबसाइट</title>
+</head>
+<body>
+    <h1>स्वागत है!</h1>
+</body>
+</html></div>
+            </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="preview-section" id="previewSection">
+            <div class="preview-header">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span><i class="fas fa-eye"></i> प्रिव्यू</span>
+                    <div class="device-switcher">
+                        <button class="device-btn active" onclick="setPreviewDevice('desktop', this)" title="Desktop View"><i class="fas fa-desktop"></i></button>
+                        <button class="device-btn" onclick="setPreviewDevice('tablet', this)" title="Tablet View"><i class="fas fa-tablet-alt"></i></button>
+                        <button class="device-btn" onclick="setPreviewDevice('mobile', this)" title="Mobile View"><i class="fas fa-mobile-alt"></i></button>
+                    </div>
+                </div>
+                <div class="live-indicator"> <div class="live-dot"></div> <span>Live</span> </div>
+                <button class="fullscreen-btn" onclick="toggleFullScreenPreview()" title="Toggle Fullscreen">
+                    <i class="fas fa-expand"></i>
+                    <i class="fas fa-compress"></i>
+                </button>
+            </div>
+            <iframe class="preview-frame" id="previewFrame"></iframe>
+        </div>
+    </div>
+
+    <!-- Side Panel -->
+    <div class="side-panel" id="sidePanel">
+        <div class="side-panel-header">
+            <h3>एक्शंस</h3>
+            <button class="btn-close" onclick="toggleSidePanel()"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="side-panel-content">
+            <button class="btn" onclick="undo()" id="undoBtnSP" disabled> <i class="fas fa-undo"></i> Undo </button>
+            <button class="btn" onclick="redo()" id="redoBtnSP" disabled> <i class="fas fa-redo"></i> Redo </button>
+            <button class="btn" onclick="uploadFile()"> <i class="fas fa-folder-open"></i> अपलोड </button>
+            <button class="btn" onclick="downloadFile()"> <i class="fas fa-download"></i> डाउनलोड </button>
+            <button class="btn" onclick="openPreview()"> <i class="fas fa-external-link-alt"></i> नई विंडो में प्रिव्यू </button>
             
-            <div class="menu-list">
-                <!-- Theme Toggle -->
-                <button class="menu-btn" onclick="toggleTheme()">
-                    <span class="menu-icon">🌓</span> Day / Night Mode
-                </button>
-
-                <hr style="width:100%; border: 0.5px solid var(--line-color);">
-
-                <!-- Backup & Restore -->
-                <button class="menu-btn" onclick="downloadBackup()">
-                    <span class="menu-icon">💾</span> Backup Data (.JSON)<br><small style="font-size:0.7rem; color:var(--text-sec);">Safe for Restore</small>
-                </button>
-
-                <button class="menu-btn" onclick="document.getElementById('importFile').click()">
-                    <span class="menu-icon">📂</span> Restore Data (Import)<br><small style="font-size:0.7rem; color:var(--text-sec);">Load from Backup</small>
-                </button>
-                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
-
-                <hr style="width:100%; border: 0.5px solid var(--line-color);">
-
-                <!-- Reports -->
-                <button class="menu-btn" onclick="openPreview()">
-                    <span class="menu-icon">👁️</span> Preview Data
-                </button>
-
-                <button class="menu-btn" onclick="exportTextData()" style="color: var(--accent);">
-                    <span class="menu-icon">📄</span> Download Report (.TXT)<br><small style="font-size:0.7rem;">Shareable Format</small>
-                </button>
-
-                <hr style="width:100%; border: 0.5px solid var(--line-color);">
-
-                <!-- Reset -->
-                <button class="menu-btn" onclick="clearDataConfirm()" style="color: var(--danger); border-color: var(--danger);">
-                    <span class="menu-icon">🗑️</span> Clear All Data
-                </button>
+            <div class="theme-chooser">
+                 <h4>थीम बदलें</h4>
+                 <div class="light-dark-toggle">
+                     <button id="darkToggleBtn" class="active" onclick="setLightDark('dark')"><i class="fas fa-moon"></i></button>
+                     <button id="lightToggleBtn" onclick="setLightDark('light')"><i class="fas fa-sun"></i></button>
+                 </div>
+                 <div class="accent-colors">
+                     <div class="color-swatch active" style="background: #007aff;" data-color="#007aff" data-hover="#005ecb" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #30d158;" data-color="#30d158" data-hover="#28b049" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #ff453a;" data-color="#ff453a" data-hover="#d93a31" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #ff9f0a;" data-color="#ff9f0a" data-hover="#d48508" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #af52de;" data-color="#af52de" data-hover="#8e3eb3" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #5856d6;" data-color="#5856d6" data-hover="#4442a8" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #ff2d55;" data-color="#ff2d55" data-hover="#d11d40" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #00c7be;" data-color="#00c7be" data-hover="#009c95" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #32ade6;" data-color="#32ade6" data-hover="#2489b8" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #64d2ff;" data-color="#64d2ff" data-hover="#40a6cc" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #bf5af2;" data-color="#bf5af2" data-hover="#9944c2" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #ff375f;" data-color="#ff375f" data-hover="#cc2949" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #1abc9c;" data-color="#1abc9c" data-hover="#148f77" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #e67e22;" data-color="#e67e22" data-hover="#b35d10" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #f1c40f;" data-color="#f1c40f" data-hover="#c29d0b" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #2ecc71;" data-color="#2ecc71" data-hover="#219150" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #3498db;" data-color="#3498db" data-hover="#2471a3" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #9b59b6;" data-color="#9b59b6" data-hover="#76448a" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #e74c3c;" data-color="#e74c3c" data-hover="#b03a2e" onclick="setAccentColor(this)"></div>
+                     <div class="color-swatch" style="background: #34495e;" data-color="#34495e" data-hover="#212f3d" onclick="setAccentColor(this)"></div>
+                 </div>
             </div>
-            <div style="text-align:center; margin-top:20px; color:var(--text-sec); font-size:0.7rem;">
-                AJ | Rail Data Collector V1.6
+
+            <span class="file-name" id="fileNameSP" style="font-size: 13px; color: var(--text-muted-color); text-align: center; margin-top: auto; padding-top:15px;">फाइल: index.html</span>
+        </div>
+    </div>
+
+    <!-- Footer Toolbar -->
+    <div class="footer-toolbar">
+        <button class="btn" onclick="beautifyCode()" title="Format Code"> <i class="fas fa-magic"></i> फ़ॉर्मेट </button>
+        <button class="btn" onclick="undo()" id="undoBtnFT" disabled> <i class="fas fa-undo"></i> </button>
+        <button class="btn" onclick="redo()" id="redoBtnFT" disabled> <i class="fas fa-redo"></i> </button>
+        <button class="btn" onclick="uploadFile()"> <i class="fas fa-folder-open"></i> </button>
+        <button class="btn" onclick="downloadFile()"> <i class="fas fa-download"></i> </button>
+    </div>
+
+    <input type="file" class="hidden-file-input" id="fileInput" accept=".html,.htm,.txt" onchange="handleFileUpload(event)">
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="customModal">
+        <div class="modal-box">
+            <p id="modalMessage"></p>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+                <button class="btn" id="modalOkBtn">OK</button>
             </div>
         </div>
     </div>
 
-    <!-- PREVIEW MODAL -->
-    <div class="modal-overlay" id="previewModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 style="margin:0;">PREVIEW</h2>
-                <button class="close-btn" onclick="closeModal('previewModal')">✖</button>
+    <div class="modal-overlay" id="renameModal">
+        <div class="modal-box" style="border-top: 5px solid var(--accent-color);">
+            <h3 style="margin-bottom: 20px; color: var(--text-color); font-weight: 700; font-size: 18px;">फाइल का नाम बदलें</h3>
+            <div style="margin-bottom: 25px;">
+                <input type="text" id="renameInput" placeholder="filename.html" 
+                       style="width: 100%; padding: 15px; background: var(--input-bg); 
+                              border: 2px solid var(--input-border); border-left: 5px solid var(--accent-color); 
+                              color: var(--text-color); border-radius: 8px; outline: none; 
+                              font-size: 16px; font-weight: 500; font-family: 'Segoe UI', sans-serif;">
             </div>
-            <div id="previewArea" class="preview-box"></div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" onclick="closeRenameModal()" style="padding: 12px 20px;">Cancel</button>
+                <button class="btn" onclick="confirmDownload()" style="background: var(--accent-color); color: white; box-shadow: 0 4px 15px var(--accent-color); padding: 12px 25px;"><i class="fas fa-download"></i> Save File</button>
+            </div>
         </div>
     </div>
 
     <script>
-        // --- CONFIG ---
-        const stations = [
-            { code: 'KRPU', name: 'Koraput', km: '189/37', type: 'STATION' },
-            { code: 'MVF',  name: 'Manabar', km: '196/35', type: 'STATION' },
-            { code: 'JRT',  name: 'Jarati', km: '-', type: 'STATION' },
-            { code: 'MVG',  name: 'Maligura', km: '-', type: 'STATION' },
-            { code: 'T1',   name: 'Tunnel 1', km: '-', type: 'TUNNEL' },
-            { code: 'T2',   name: 'Tunnel 2', km: '-', type: 'TUNNEL' },
-            { code: 'CTS',  name: 'Chattariput', km: '224/17', type: 'STATION' },
-            { code: 'NS-1', name: 'Neutral Sec 1', km: '-', type: 'NS' },
-            { code: 'JYP',  name: 'Jeypore', km: '-', type: 'STATION' },
-            { code: 'DIR',  name: 'Dhanapur', km: '-', type: 'STATION' },
-            { code: 'NS-2', name: 'Neutral Sec 2', km: '-', type: 'NS' },
-            { code: 'KDPA', name: 'Khadapa', km: '-', type: 'STATION' },
-            { code: 'CJS',  name: 'Charamula', km: '-', type: 'STATION' },
-            { code: 'KPRR', name: 'Kotapar Road', km: '-', type: 'STATION' },
-            { code: 'AGB',  name: 'Ambaguda', km: '-', type: 'STATION' },
-            { code: 'NS-3', name: 'Neutral Sec 3', km: '-', type: 'NS' },
-            { code: 'AGZ',  name: 'Amagura', km: '289/09', type: 'STATION' },
-            { code: 'NKX',  name: 'Nakti Semra', km: '-', type: 'STATION' },
-            { code: 'JDB',  name: 'Jagdalpur', km: '-', type: 'STATION' },
-            { code: 'NS-4', name: 'Neutral Sec 4', km: '300/15', type: 'NS' },
-            { code: 'KMEZ', name: 'Kumhar Marenga', km: '-', type: 'STATION' },
-            { code: 'TPQ',  name: 'Topokal', km: '-', type: 'STATION' },
-            { code: 'NS-5', name: 'Neutral Sec 5', km: '-', type: 'NS' },
-            { code: 'BDXX', name: 'Bade Arapur', km: '-', type: 'STATION' },
-            { code: 'NS-6', name: 'Neutral Sec 6', km: '-', type: 'NS' },
-            { code: 'DMK',  name: 'Dilmili', km: '-', type: 'STATION' },
-            { code: 'SZY',  name: 'Silak Jhori', km: '-', type: 'STATION' },
-            { code: 'NS-7', name: 'Neutral Sec 7', km: '-', type: 'NS' },
-            { code: 'KMSD', name: 'Kumar Sadra', km: '-', type: 'STATION' },
-            { code: 'NS-8', name: 'Neutral Sec 8', km: '-', type: 'NS' },
-            { code: 'KKLU', name: 'Kaklur', km: '-', type: 'STATION' },
-            { code: 'KWGN', name: 'Kawargaon', km: '-', type: 'STATION' },
-            { code: 'DPF',  name: 'Dabpal', km: '383/43', type: 'STATION' },
-            { code: 'GIZ',  name: 'Gidam', km: '394/33', type: 'STATION' },
-            { code: 'DWZ',  name: 'Dantewara', km: '-', type: 'STATION' },
-            { code: 'NS-10',name: 'Neutral Sec 10', km: '-', type: 'NS' },
-            { code: 'KMLR', name: 'Kamalpur', km: '-', type: 'STATION' },
-            { code: 'BHNS', name: 'Bhansi', km: '-', type: 'STATION' },
-            { code: 'BCHL', name: 'Bacheli', km: '-', type: 'STATION' },
-            { code: 'KRDL', name: 'Kirandul', km: '-', type: 'STATION' }
-        ];
+    // --- APP LOGIC ---
+    const editorElement = document.getElementById('codeEditor');
+    const sidePanel = document.getElementById('sidePanel');
+    const body = document.body;
+    const themeToggleBtn = document.querySelector('.header .theme-toggle');
+    const hamburgerMenu = document.querySelector('.hamburger-menu');
 
-        const ASSETS_STATION = [
-            { id: 'DIST', label: 'DISTANT' },
-            { id: 'HOME', label: 'HOME' },
-            { id: 'BLD',  label: 'STN BLD' },
-            { id: 'STR',  label: 'STARTER' },
-            { id: 'ADV',  label: 'ADV STR' }
-        ];
+    let aceEditor; 
+    let sidePanelOpen = false;
+    let searchMatches = [];
+    let currentMatchIndex = -1;
+    let totalChanges = 0;
+    let currentMarkers = []; 
+    let originalFileName = 'index.html'; 
 
-        const ASSETS_NS = [
-            { id: '500M', label: '500M WARN' },
-            { id: '250M', label: '250M BRD' },
-            { id: 'OPEN', label: 'OPEN DJ' },
-            { id: 'PT',   label: 'NS POINT' },
-            { id: 'CLOSE',label: 'CLOSE DJ' }
-        ];
-        
-        const ASSETS_TUNNEL = [
-             { id: 'ENT', label: 'ENTRY' },
-             { id: 'EXIT', label: 'EXIT' }
-        ];
+    // --- IndexedDB Logic (AJ's Vault) ---
+    const DB_NAME = 'EasyHtmlEditerDB';
+    const STORE_NAME = 'editorState';
+    let db;
 
-        let currentDirection = 'UP';
-        let currentPos = null;
-        let capturedData = JSON.parse(localStorage.getItem('rail_kk_data')) || {};
-
-        // --- GPS Logic ---
-        function startGPS() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.watchPosition(
-                    (position) => {
-                        currentPos = position.coords;
-                        const gpsEl = document.getElementById('gpsStatus');
-                        gpsEl.innerText = "GPS ACTIVE (ACC: " + Math.round(position.coords.accuracy) + "m)";
-                        gpsEl.classList.remove('blink');
-                        gpsEl.classList.add('gps-active');
-                        document.getElementById('currentLatLong').innerHTML = 
-                            position.coords.latitude.toFixed(6) + "<br>" + position.coords.longitude.toFixed(6);
-                    },
-                    (err) => { document.getElementById('gpsStatus').innerText = "GPS Error: " + err.message; },
-                    { enableHighAccuracy: true, maximumAge: 0 }
-                );
-            } else { alert("Geolocation not supported"); }
-        }
-
-        // --- UI Functions ---
-        function setDirection(dir) {
-            currentDirection = dir;
-            document.getElementById('btn-UP').className = `dir-btn ${dir === 'UP' ? 'active' : ''}`;
-            document.getElementById('btn-DN').className = `dir-btn ${dir === 'DN' ? 'active' : ''}`;
-            renderTimeline();
-        }
-
-        function renderTimeline() {
-            const list = document.getElementById('stationList');
-            list.innerHTML = '';
-
-            let displayStations = [...stations];
-            if(currentDirection === 'DN') {
-                displayStations.reverse();
-            }
-
-            displayStations.forEach(stn => {
-                const el = document.createElement('div');
-                el.className = `station-card`;
-                el.onclick = () => openStation(stn);
-                
-                const statusClass = getStatusClass(stn.code); 
-                el.classList.add(statusClass);
-
-                el.innerHTML = `
-                    <div class="station-dot"></div>
-                    <div class="stn-header">
-                        <span class="stn-name">${stn.name}</span>
-                        <span class="stn-km">${stn.km}</span>
-                    </div>
-                    <div class="stn-type">${stn.type}</div>
-                    <div class="data-badges">
-                        ${getBadgesHtml(stn.code, stn.type)}
-                    </div>
-                `;
-                list.appendChild(el);
-            });
-        }
-
-        function getStatusClass(code) {
-            const prefix = `${code}_${currentDirection}_`;
-            const keys = Object.keys(capturedData).filter(k => k.startsWith(prefix));
-            return keys.length > 0 ? 'saved-some' : 'empty';
-        }
-
-        function getBadgesHtml(code, type) {
-            let assets = (type === 'NS') ? ASSETS_NS : (type === 'TUNNEL') ? ASSETS_TUNNEL : ASSETS_STATION;
-            return assets.map(a => {
-                const key = `${code}_${currentDirection}_${a.id}`;
-                return `<span class="badge ${capturedData[key] ? 'done' : ''}">${a.id}</span>`;
-            }).join('');
-        }
-
-        // --- Modal & Saving ---
-        function openStation(stn) {
-            const modal = document.getElementById('signalModal');
-            document.getElementById('modalTitle').innerText = `${stn.name} (${currentDirection})`;
-            
-            let assets = (stn.type === 'NS') ? ASSETS_NS : (stn.type === 'TUNNEL') ? ASSETS_TUNNEL : ASSETS_STATION;
-            const grid = document.getElementById('signalGrid');
-            grid.innerHTML = '';
-            
-            assets.forEach(asset => {
-                const key = `${stn.code}_${currentDirection}_${asset.id}`;
-                const savedVal = capturedData[key];
-                const savedKM = (savedVal && savedVal.manualKm) ? savedVal.manualKm : '';
-                
-                const row = document.createElement('div');
-                row.className = `signal-row ${savedVal ? 'captured' : ''}`;
-                
-                row.innerHTML = `
-                    <div class="row-top">
-                        <span class="signal-label">${asset.label}</span>
-                        <div class="coord-display">${savedVal ? savedVal.lat + ', ' + savedVal.lng : ''}</div>
-                    </div>
-                    <div class="row-bottom">
-                        <input type="text" id="km-${key}" class="km-input" placeholder="KM" value="${savedKM}" onclick="event.stopPropagation()">
-                        <button class="capture-btn ${savedVal ? 'active' : ''}" onclick="saveLocation('${key}', this, event)">
-                            ${savedVal ? '✅ UPDATE' : '📍 SAVE'}
-                        </button>
-                    </div>
-                `;
-                grid.appendChild(row);
-            });
-            modal.classList.add('open');
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('open');
-            renderTimeline();
-        }
-
-        function saveLocation(key, btnElement, e) {
-            e.stopPropagation();
-            const kmInput = document.getElementById(`km-${key}`);
-            const manualKm = kmInput.value.trim();
-
-            if (!currentPos) { alert("Wait for GPS..."); return; }
-
-            const dataPoint = {
-                lat: parseFloat(currentPos.latitude.toFixed(6)),
-                lng: parseFloat(currentPos.longitude.toFixed(6)),
-                acc: currentPos.accuracy,
-                ts: new Date().toISOString(),
-                manualKm: manualKm
-            };
-
-            capturedData[key] = dataPoint;
-            localStorage.setItem('rail_kk_data', JSON.stringify(capturedData));
-
-            const row = btnElement.closest('.signal-row');
-            row.classList.add('captured');
-            row.querySelector('.coord-display').innerText = `${dataPoint.lat}, ${dataPoint.lng}`;
-            btnElement.classList.add('active');
-            btnElement.innerText = "✅ UPDATE";
-        }
-
-        // --- SETTINGS MENU FUNCTIONS ---
-        function openSettings() { document.getElementById('settingsModal').classList.add('open'); }
-        
-        function toggleTheme() {
-            document.body.classList.toggle('light-mode');
-        }
-
-        // 1. Export Report (.TXT)
-        function exportTextData() {
-            if(Object.keys(capturedData).length === 0) { alert("No data!"); return; }
-
-            let content = "KK LINE ROUTE REPORT\nGenerated: " + new Date().toLocaleString() + "\n========================\n\n";
-            content += "Format: Station | Signal | KM | Lat, Long\n\n";
-
-            ['UP', 'DN'].forEach(dir => {
-                content += `>>> ${dir} DIRECTION <<<\n------------------------\n`;
-                let stns = (dir === 'UP') ? stations : [...stations].reverse();
-                
-                stns.forEach(stn => {
-                    let assets = (stn.type === 'NS') ? ASSETS_NS : (stn.type === 'TUNNEL') ? ASSETS_TUNNEL : ASSETS_STATION;
-                    assets.forEach(asset => {
-                        const key = `${stn.code}_${dir}_${asset.id}`;
-                        if(capturedData[key]) {
-                            const d = capturedData[key];
-                            const kmStr = d.manualKm || "-";
-                            content += `${stn.name.padEnd(12)} | ${asset.label.padEnd(10)} | ${kmStr.padEnd(8)} | ${d.lat}, ${d.lng}\n`;
-                        }
-                    });
-                });
-                content += "\n";
-            });
-
-            const blob = new Blob([content], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = window.URL.createObjectURL(blob);
-            a.download = "KK_Route_Report.txt";
-            document.body.appendChild(a); a.click(); a.remove();
-        }
-
-        // 2. Backup (.JSON)
-        function downloadBackup() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(capturedData));
-            const a = document.createElement('a');
-            a.href = dataStr; a.download = "KK_Backup_" + new Date().toISOString().slice(0,10) + ".json";
-            document.body.appendChild(a); a.click(); a.remove();
-        }
-
-        // 3. Restore (Import)
-        function importData(input) {
-            const file = input.files[0];
-            if(!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const imported = JSON.parse(e.target.result);
-                    if(confirm("Restore data? This will merge with existing data.")) {
-                        capturedData = { ...capturedData, ...imported };
-                        localStorage.setItem('rail_kk_data', JSON.stringify(capturedData));
-                        alert("Data restored successfully!");
-                        renderTimeline();
-                        closeModal('settingsModal');
-                    }
-                } catch(err) {
-                    alert("Invalid JSON file!");
+    const initDB = () => {
+        return new Promise((resolve) => {
+            const request = indexedDB.open(DB_NAME, 1);
+            request.onupgradeneeded = (e) => {
+                const database = e.target.result;
+                if (!database.objectStoreNames.contains(STORE_NAME)) {
+                    database.createObjectStore(STORE_NAME);
                 }
             };
-            reader.readAsText(file);
-            input.value = ''; // Reset input
+            request.onsuccess = (e) => { db = e.target.result; resolve(); };
+        });
+    };
+
+    const saveToIndexedDB = async (key, value) => {
+        if (!db) return;
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        tx.objectStore(STORE_NAME).put(value, key);
+    };
+
+    const getFromIndexedDB = (key) => {
+        return new Promise((resolve) => {
+            if (!db) { resolve(null); return; }
+            const tx = db.transaction(STORE_NAME, 'readonly');
+            const request = tx.objectStore(STORE_NAME).get(key);
+            request.onsuccess = () => resolve(request.result);
+        });
+    };
+
+    // --- THEME MANAGEMENT ---
+    function setLightDark(mode) {
+        const isLight = mode === 'light';
+        const lightBtn = document.getElementById('lightToggleBtn');
+        const darkBtn = document.getElementById('darkToggleBtn');
+        
+        body.classList.toggle('light-theme', isLight);
+        themeToggleBtn.innerHTML = isLight ? '<i class="fas fa-moon"></i> <span>Dark Mode</span>' : '<i class="fas fa-sun"></i> <span>Light Mode</span>';
+        
+        if(lightBtn) lightBtn.classList.toggle('active', isLight);
+        if(darkBtn) darkBtn.classList.toggle('active', !isLight);
+        
+        if (aceEditor) { 
+            aceEditor.setTheme(isLight ? 'ace/theme/chrome' : 'ace/theme/tomorrow_night'); 
+        }
+        localStorage.setItem('editorThemeMode', mode);
+    }
+
+    function setAccentColor(element) {
+        const color = element.getAttribute('data-color');
+        const hoverColor = element.getAttribute('data-hover');
+        document.documentElement.style.setProperty('--accent-color', color);
+        document.documentElement.style.setProperty('--accent-hover-color', hoverColor);
+        document.querySelectorAll('.color-swatch').forEach(sw => sw.classList.remove('active'));
+        element.classList.add('active');
+        localStorage.setItem('editorAccentColor', color);
+        localStorage.setItem('editorAccentHoverColor', hoverColor);
+    }
+    
+    function toggleLightDark() {
+        if(body.classList.contains('light-theme')) { setLightDark('dark'); } else { setLightDark('light'); }
+    }
+    
+    // --- MODAL FUNCTIONS ---
+    const customModal = document.getElementById('customModal');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalOkBtn = document.getElementById('modalOkBtn');
+    const modalCancelBtn = document.getElementById('modalCancelBtn');
+    
+    function showCustomAlert(message) {
+        modalMessage.textContent = message;
+        modalCancelBtn.style.display = 'none';
+        modalOkBtn.textContent = 'ठीक है';
+        customModal.style.display = 'flex';
+        return new Promise((resolve) => {
+            modalOkBtn.onclick = () => { customModal.style.display = 'none'; resolve(true); };
+        });
+    }
+    
+    function showCustomConfirm(message) {
+        modalMessage.textContent = message;
+        modalCancelBtn.style.display = 'block';
+        modalOkBtn.textContent = 'हाँ';
+        modalCancelBtn.textContent = 'नहीं';
+        customModal.style.display = 'flex';
+        return new Promise((resolve) => {
+            modalOkBtn.onclick = () => { customModal.style.display = 'none'; resolve(true); };
+            modalCancelBtn.onclick = () => { customModal.style.display = 'none'; resolve(false); };
+        });
+    }
+
+    // --- Core Editor Functions ---
+    function updatePreview() {
+        if (!aceEditor) return;
+        document.getElementById('previewFrame').src = 'data:text/html;charset=utf-8,' + encodeURIComponent(aceEditor.getValue());
+    }
+    
+    async function saveCodeToLocalStorage() {
+        if (!aceEditor) return;
+        const code = aceEditor.getValue();
+        // AJ: IndexedDB में भारी डेटा सेव करना
+        await saveToIndexedDB('lastCode', code);
+        await saveToIndexedDB('lastFileName', originalFileName);
+        // Backup for safety
+        localStorage.setItem('easyHtmlEditorFileName', originalFileName);
+    }
+
+    async function loadInitialCode(initialCodeFromHtml) {
+        // AJ: पहले IndexedDB से चेक करें
+        let savedCode = await getFromIndexedDB('lastCode');
+        
+        if (!savedCode) {
+            try { savedCode = localStorage.getItem('easyHtmlEditorCode'); } catch (e) {}
+        }
+        
+        if (savedCode) {
+            aceEditor.setValue(savedCode, -1);
+        } else if (initialCodeFromHtml && initialCodeFromHtml.trim() !== '') {
+            aceEditor.setValue(initialCodeFromHtml, -1);
+        } else {
+            const defaultCode = `<!DOCTYPE html>\n<html lang="hi">\n<head>\n<meta charset="UTF-8">\n<title>Website</title>\n</head>\n<body>\n<h1>Hello!</h1>\n</body>\n</html>`;
+            aceEditor.setValue(defaultCode, -1);
+        }
+    }
+
+    function updateUndoRedoButtons() {
+        if (!aceEditor) return;
+        const undoManager = aceEditor.session.getUndoManager();
+        
+        // SYNC FIX: फुटर और साइड पैनल दोनों के बटन्स को सही स्टेट में लाना
+        const canUndo = undoManager.hasUndo();
+        const canRedo = undoManager.hasRedo();
+
+        document.querySelectorAll('#undoBtnSP, #undoBtnFT').forEach(btn => {
+            btn.disabled = !canUndo;
+            // मोबाइल पर विज़ुअल फीडबैक के लिए ओपेसिटी (Opacity) सेट करना
+            btn.style.opacity = canUndo ? "1" : "0.4";
+        });
+
+        document.querySelectorAll('#redoBtnSP, #redoBtnFT').forEach(btn => {
+            btn.disabled = !canRedo;
+            btn.style.opacity = canRedo ? "1" : "0.4";
+        });
+    }
+
+    function undo() { 
+        if (aceEditor && aceEditor.session.getUndoManager().hasUndo()) {
+            aceEditor.undo();
+            // SYNC FIX: अगर कोई बदलाव वापस हुआ है, तो काउंटर कम करें
+            if (totalChanges > 0) updateChangeCounter(-1);
+            updateUndoRedoButtons(); // बटन्स की हालत तुरंत अपडेट करें
+        }
+    }
+    function redo() { 
+        if (aceEditor && aceEditor.session.getUndoManager().hasRedo()) {
+            aceEditor.redo();
+            // SYNC FIX: अगर कोई बदलाव वापस आया है, तो काउंटर बढ़ाएं
+            updateChangeCounter(1);
+            updateUndoRedoButtons(); // बटन्स की हालत तुरंत अपडेट करें
+        }
+    }
+
+    function clearAllMarks() {
+        currentMarkers.forEach(markerId => aceEditor.session.removeMarker(markerId));
+        currentMarkers = [];
+    }
+
+    function updateChangeCounter(count) {
+        totalChanges += count;
+        const counterElement = document.getElementById('changeCounter');
+        
+        if (totalChanges > 0) {
+            counterElement.innerHTML = `<i class="fas fa-magic"></i> ${totalChanges}`;
+            counterElement.style.display = 'inline-flex';
+            counterElement.classList.remove('bump');
+            void counterElement.offsetWidth; 
+            counterElement.classList.add('bump');
+        } else {
+            counterElement.style.display = 'none';
+        }
+        localStorage.setItem('editorTotalChanges', totalChanges);
+
+        if (originalFileName) {
+            let display = originalFileName;
+            if (totalChanges > 0) {
+                const lastDotIndex = originalFileName.lastIndexOf('.');
+                if (lastDotIndex !== -1) {
+                    const namePart = originalFileName.substring(0, lastDotIndex);
+                    const extPart = originalFileName.substring(lastDotIndex); 
+                    display = `${namePart}.${totalChanges}${extPart}`;
+                } else {
+                    display = `${originalFileName}.${totalChanges}`;
+                }
+            }
+            document.getElementById('fileNameSP').textContent = `फाइल: ${display}`;
+            const findLabelName = document.getElementById('uploadedFileName');
+            if(findLabelName) findLabelName.innerHTML = `<i class="fas fa-file-code"></i> ${display}`;
+        }
+    }
+
+    function resetChangeCounter() {
+        totalChanges = 0;
+        const counterElement = document.getElementById('changeCounter');
+        counterElement.style.display = 'none';
+        localStorage.setItem('editorTotalChanges', '0');
+    }
+    
+    function toggleSidePanel() {
+        sidePanel.classList.toggle('open');
+        body.classList.toggle('side-panel-open');
+        sidePanelOpen = sidePanel.classList.contains('open');
+    }
+    function showSection(sectionId) {
+        document.getElementById('editorSection').classList.toggle('active', sectionId === 'editor');
+        document.getElementById('previewSection').classList.toggle('active', sectionId === 'preview');
+        document.getElementById('editorTabBtn').classList.toggle('active', sectionId === 'editor');
+        document.getElementById('previewTabBtn').classList.toggle('active', sectionId === 'preview');
+        if (sectionId === 'editor' && aceEditor) aceEditor.resize();
+        if (sectionId === 'preview') updatePreview();
+    }
+    function toggleFullScreenPreview() { body.classList.toggle('fullscreen-preview'); }
+
+    function setPreviewDevice(device, btn) {
+        const frame = document.getElementById('previewFrame');
+        const buttons = document.querySelectorAll('.device-btn');
+        
+        // एक्टिव क्लास अपडेट करें
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // डिवाइस के हिसाब से विड्थ सेट करें
+        if (device === 'mobile') frame.style.width = '360px';
+        else if (device === 'tablet') frame.style.width = '768px';
+        else frame.style.width = '100%';
+        
+        // फ्रेम को फिर से रेंडर करें
+        updatePreview();
+    }
+    
+    function clearInput(elementId) { 
+        document.getElementById(elementId).value = ''; 
+        
+        // SYNC FIX: अगर सर्च बॉक्स क्लियर हुआ है, तो एडिटर की 'गंदगी' भी साफ़ करें
+        if (elementId === 'findBlock') {
+            if (aceEditor) {
+                aceEditor.session.getSelection().clearSelection();
+                clearAllMarks(); // हाईलाइट्स हटाना
+            }
+            // काउंटर और नेविगेशन छिपाना
+            document.getElementById('matchCounter').textContent = '';
+            document.getElementById('findNavContainer').style.display = 'none';
+            document.getElementById('replaceAllBtn').style.display = 'none';
+        }
+    }
+
+    // AI का कचरा (```html, ```) साफ़ करने वाला फंक्शन
+    function cleanAIFormatting(textarea) {
+        let val = textarea.value;
+        // ये रेगुलर एक्सप्रेशन शुरू और आखिर से ```html या ``` को हटा देता है
+        const cleaned = val.replace(/^```[a-z]*\n?|```$/gi, '').trim();
+        if (val !== cleaned) {
+            textarea.value = cleaned;
+        }
+    }
+    
+    async function findAndSelectText() {
+        clearAllMarks(); 
+        
+        // AJ Fix: नई सर्च शुरू होते ही बटन्स को एकदम फ्रेश (Unpressed) कर दो
+        document.getElementById('findNextBtn').classList.remove('toggled');
+        document.getElementById('findPrevBtn').classList.remove('toggled');
+
+        const codeToFind = document.getElementById('findBlock').value;
+        const findNavContainer = document.getElementById('findNavContainer');
+        const replaceAllBtn = document.getElementById('replaceAllBtn');
+        
+        if (!codeToFind) {
+            showCustomAlert('खोजने के लिए बॉक्स में कुछ लिखें।');
+            return;
         }
 
-        // 4. Preview
-        function openPreview() {
-            const area = document.getElementById('previewArea');
-            area.innerText = Object.keys(capturedData).length ? JSON.stringify(capturedData, null, 2) : "No data captured yet.";
-            document.getElementById('previewModal').classList.add('open');
+        const matchesFound = aceEditor.findAll(codeToFind, { 
+            regExp: false, 
+            caseSensitive: false, 
+            wholeWord: false,
+            wrap: true,
+            preventScroll: false 
+        });
+    
+        if (matchesFound > 0) {
+            if (window.innerWidth <= 768) showSection('editor');
+            
+            // AJ Fix: स्टोर करें कि कितने मैच मिले और पहला इंडेक्स सेट करें
+            searchMatches = aceEditor.session.getSelection().getAllRanges();
+            currentMatchIndex = 0;
+
+            // अगर 1 से ज्यादा मैच हैं, तो पहले सुंदर पॉप-अप दिखाओ
+            if (matchesFound > 1) {
+                findNavContainer.style.display = 'none'; // पहले छुपा कर रखें
+                await showCustomAlert(`कुल ${matchesFound} मैच मिले हैं! अब आप एरो बटन्स से इन्हें चेक कर सकते हैं।`);
+                
+                // OK करने के बाद नेविगेशन दिखाओ (एनीमेशन CSS से खुद होगा)
+                findNavContainer.style.display = 'inline-flex';
+                replaceAllBtn.style.display = 'inline-flex';
+            } else {
+                findNavContainer.style.display = 'none';
+                replaceAllBtn.style.display = 'none';
+            }
+            
+            updateMatchDisplay();
+            focusCurrentMatch();
+        } else {
+            showCustomAlert('कोड नहीं मिला।');
+            findNavContainer.style.display = 'none';
+            replaceAllBtn.style.display = 'none';
+        }
+    }
+    
+    async function replaceCodeBlock() {
+        const codeToFind = document.getElementById('findBlock').value;
+        const newText = document.getElementById('replaceBlock').value;
+
+        // AJ Fix: Same code check
+        if (codeToFind === newText) {
+            showCustomAlert('पुराना और नया कोड बिल्कुल एक जैसा है, कुछ भी बदलने की ज़रूरत नहीं है।');
+            return;
         }
 
-        // 5. Clear
-        function clearDataConfirm(){
-            if(confirm("DELETE ALL DATA?")) {
-                localStorage.removeItem('rail_kk_data');
-                capturedData = {}; renderTimeline();
-                alert("Data cleared.");
+        const Range = ace.require('ace/range').Range;
+        const currentRange = aceEditor.getSelectionRange();
+        
+        if (!currentRange || aceEditor.selection.isEmpty()) {
+             showCustomAlert('पहले "खोजें" बटन दबाकर टेक्स्ट सिलेक्ट करें।');
+             return;
+        }
+
+        clearAllMarks();
+        const startRow = currentRange.start.row;
+        const startCol = currentRange.start.column;
+
+        aceEditor.replace(newText);
+        updateChangeCounter(1);
+
+        // SYNC FIX: रिप्लेसमेंट के बाद काउंटर को अपडेट करना (AJ Fix: Redeclaration removed)
+        if (codeToFind) {
+            const smartRegex = createSmartSearchRegex(codeToFind);
+            const remainingMatches = aceEditor.findAll(smartRegex, { regExp: true, caseSensitive: false });
+            updateMatchDisplay();
+            // अगर अब कोई मैच नहीं बचा तो नेविगेशन छिपा दें
+            if (remainingMatches <= 1) {
+                document.getElementById('findNavContainer').style.display = 'none';
+                document.getElementById('replaceAllBtn').style.display = 'none';
             }
         }
 
-        // Init
-        renderTimeline();
-        startGPS();
+        const endPos = aceEditor.getCursorPosition();
+        const newRange = new Range(startRow, startCol, endPos.row, endPos.column);
+        const markerId = aceEditor.session.addMarker(newRange, "green-marker", "text");
+        currentMarkers.push(markerId);
+    }
 
+    function showToast(message) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toast-container';
+            container.className = 'toast-container';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.innerHTML = `<i class="fas fa-check-circle" style="color: var(--accent-success-color)"></i> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('fade-out');
+            setTimeout(() => toast.remove(), 500);
+        }, 3000);
+    }
+
+    async function replaceAllCode() {
+        const codeToFind = document.getElementById('findBlock').value;
+        const codeToReplace = document.getElementById('replaceBlock').value;
+
+        // AJ Fix: Same code check
+        if (codeToFind === codeToReplace) {
+            showCustomAlert('पुराना और नया कोड बिल्कुल एक जैसा है, कुछ भी बदलने की ज़रूरत नहीं है।');
+            return;
+        }
+
+        const smartRegex = createSmartSearchRegex(codeToFind);
+
+        const matchesFound = aceEditor.findAll(smartRegex, { regExp: true });
+        if (matchesFound > 0) {
+            aceEditor.replaceAll(codeToReplace);
+            updateChangeCounter(1);
+            
+            // SYNC FIX: सारे मैच खत्म होने पर काउंटर साफ़ करना
+            document.getElementById('matchCounter').textContent = '';
+            document.getElementById('findNavContainer').style.display = 'none';
+            document.getElementById('replaceAllBtn').style.display = 'none';
+            
+            showToast(`${matchesFound} बदलाव सफलतापूर्वक किए गए!`);
+        } else {
+            showToast('खोजने के लिए कुछ नहीं मिला।');
+        }
+    }
+
+    function findNext() { 
+        if (searchMatches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex + 1) % searchMatches.length;
+        aceEditor.selection.setRange(searchMatches[currentMatchIndex]);
+        
+        const nextBtn = document.getElementById('findNextBtn');
+        const prevBtn = document.getElementById('findPrevBtn');
+
+        // AJ Fix: अगर वापस पहली पोजीशन (0) पर आ गए तो दोनों रिसेट करो
+        if (currentMatchIndex === 0) {
+            nextBtn.classList.remove('toggled');
+            prevBtn.classList.remove('toggled');
+        } else {
+            nextBtn.classList.add('toggled');
+            prevBtn.classList.remove('toggled');
+        }
+        
+        updateMatchDisplay();
+        focusCurrentMatch();
+    }
+    function findPrev() { 
+        if (searchMatches.length === 0) return;
+        currentMatchIndex = (currentMatchIndex - 1 + searchMatches.length) % searchMatches.length;
+        aceEditor.selection.setRange(searchMatches[currentMatchIndex]);
+        
+        const nextBtn = document.getElementById('findNextBtn');
+        const prevBtn = document.getElementById('findPrevBtn');
+
+        // AJ Fix: अगर वापस पहली पोजीशन (0) पर आ गए तो दोनों रिसेट करो
+        if (currentMatchIndex === 0) {
+            nextBtn.classList.remove('toggled');
+            prevBtn.classList.remove('toggled');
+        } else {
+            prevBtn.classList.add('toggled');
+            nextBtn.classList.remove('toggled');
+        }
+        
+        updateMatchDisplay();
+        focusCurrentMatch();
+    }
+
+    // AJ Fix: मैच काउंटर अब ग्लोबल लिस्ट से चलेगा
+    function updateMatchDisplay() {
+        const total = searchMatches.length;
+        const current = currentMatchIndex + 1;
+        const counter = document.getElementById('matchCounter');
+        
+        if (total > 0) {
+            counter.textContent = `${current} of ${total}`;
+            counter.style.color = 'var(--accent-warning-color)';
+        } else {
+            counter.textContent = '';
+        }
+    }
+
+    // करंट मैच पर ग्लो और सेंटर फोकस करने के लिए
+    function focusCurrentMatch() {
+        const range = aceEditor.getSelectionRange();
+        if (range) {
+            aceEditor.scrollToLine(range.start.row, true, true, function() {});
+            // एक अस्थायी ग्लो मार्कर जोड़ना
+            const markerId = aceEditor.session.addMarker(range, "current-match-glow", "text");
+            setTimeout(() => {
+                aceEditor.session.removeMarker(markerId);
+            }, 1500);
+        }
+    }
+
+    function uploadFile() { document.getElementById('fileInput').click(); }
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                showSection('editor'); 
+                aceEditor.setValue(e.target.result, -1);
+                originalFileName = file.name;
+                document.getElementById('fileNameSP').textContent = `फाइल: ${file.name}`;
+                const findLabelName = document.getElementById('uploadedFileName');
+                if(findLabelName) findLabelName.innerHTML = `<i class="fas fa-file-code"></i> ${file.name}`;
+                resetChangeCounter();
+                setTimeout(() => { aceEditor.resize(); }, 100); 
+            };
+            reader.readAsText(file);
+        }
+    }
+
+    async function clearEditor() {
+        const confirmed = await showCustomConfirm('क्या आप वाकई एडिटर को पूरी तरह साफ करना चाहते हैं?');
+        if (confirmed) { 
+            loadInitialCode('');
+            resetChangeCounter();
+            document.getElementById('fileNameSP').textContent = 'फाइल: index.html';
+        }
+    }
+
+    function downloadFile() {
+        const currentName = document.getElementById('fileNameSP').textContent.replace('फाइल: ', '').trim() || 'index.html';
+        const inputField = document.getElementById('renameInput');
+        inputField.value = currentName;
+        document.getElementById('renameModal').style.display = 'flex';
+        setTimeout(() => { inputField.focus(); inputField.select(); }, 100);
+    }
+
+    function closeRenameModal() { document.getElementById('renameModal').style.display = 'none'; }
+
+    function confirmDownload() {
+        let fileName = document.getElementById('renameInput').value.trim();
+        if (!fileName) fileName = 'index.html';
+        if (!fileName.includes('.')) fileName += '.html';
+
+        // SYNC FIX: डाउनलोड के बाद नए नाम को 'Master Name' बनायें ताकि वर्जनिंग सही रहे
+        originalFileName = fileName;
+        updateChangeCounter(0); 
+        saveCodeToLocalStorage(); // नया नाम लोकल स्टोरेज में भी अपडेट करें
+
+        const blob = new Blob([aceEditor.getValue()], { type: 'text/html' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        closeRenameModal();
+        document.getElementById('fileNameSP').textContent = `फाइल: ${fileName}`;
+    }
+
+    document.getElementById('renameInput').addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') confirmDownload();
+    });
+
+    function openPreview() {
+        try {
+            const newWindow = window.open();
+            newWindow.document.write(aceEditor.getValue());
+            newWindow.document.close();
+        } catch (e) { showCustomAlert('पॉप-अप ब्लॉक हो गया!'); }
+    }
+
+    function copyAllCode() {
+        if (!aceEditor) return;
+        const code = aceEditor.getValue();
+        const btn = document.getElementById('copyBtn');
+        const icon = btn.querySelector('i');
+
+        // UI Feedback फंक्शन (ताकि यूजर को पता चले काम हो गया)
+        const showSuccess = () => {
+            const originalClass = icon.className;
+            icon.className = 'fas fa-check'; 
+            btn.style.color = 'var(--accent-success-color)';
+            btn.style.borderColor = 'var(--accent-success-color)';
+            showToast('कोड कॉपी हो गया! 📋'); // Toast भी दिखाएगा
+            
+            setTimeout(() => {
+                icon.className = 'fas fa-copy';
+                btn.style.color = '';
+                btn.style.borderColor = '';
+            }, 2000);
+        };
+
+        // Fallback तरीका (पुराने ब्राउज़र या Local File के लिए)
+        const fallbackCopy = (text) => {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed"; // स्क्रीन से बाहर न जाए
+            textArea.style.left = "-9999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) showSuccess();
+                else showToast('कॉपी फेल हो गया!');
+            } catch (err) {
+                showToast('कॉपी नहीं हो पाया!');
+            }
+            document.body.removeChild(textArea);
+        };
+
+        // पहले मॉडर्न API ट्राई करो, अगर फेल हो तो Fallback यूज़ करो
+        if (!navigator.clipboard) {
+            fallbackCopy(code);
+            return;
+        }
+        navigator.clipboard.writeText(code).then(
+            function() { showSuccess(); }, 
+            function(err) { fallbackCopy(code); }
+        );
+    }
+
+    function insertSymbol(symbol) {
+        if (aceEditor) {
+            aceEditor.insert(symbol);
+            aceEditor.focus();
+            // छोटा वाइब्रेशन फील देने के लिए (अगर मोबाइल सपोर्ट करे)
+            if (navigator.vibrate) navigator.vibrate(10);
+        }
+    }
+
+    // Auto-Tag Close removed for stability
+
+    function beautifyCode() {
+        if (!aceEditor) return;
+        const currentCode = aceEditor.getValue();
+        // Configuration for professional look
+        const formattedCode = html_beautify(currentCode, {
+            indent_size: 4,
+            indent_char: ' ',
+            max_preserve_newlines: 2,
+            preserve_newlines: true,
+            indent_inner_html: true,
+            brace_style: 'collapse',
+            indent_scripts: 'normal',
+            wrap_line_length: 0
+        });
+        aceEditor.setValue(formattedCode, -1);
+        showToast("कोड जादुई तरीके से संवर गया! ✨");
+    }
+    
+    function toggleToolbar() {
+        document.body.classList.toggle('toolbar-collapsed');
+    }
+
+    // --- Init ---
+    window.addEventListener('DOMContentLoaded', async () => {
+        await initDB(); // डेटाबेस शुरू करें
+        const editorDiv = document.getElementById('codeEditor');
+        const initialContent = editorDiv.textContent;
+        aceEditor = ace.edit(editorDiv);
+        ace.require("ace/ext/language_tools");
+        aceEditor.setOptions({
+            mode: "ace/mode/html",
+            selectionStyle: "text",
+            wrap: true,
+            enableMobileMenu: false,
+            enableBasicAutocompletion: true,
+            enableLiveAutocompletion: true,
+            fontSize: "14px",
+            fontFamily: 'Monaco, Menlo, monospace',
+            showPrintMargin: false,
+            highlightActiveLine: true,
+            cursorStyle: "smooth",
+            behavioursEnabled: true,
+            animatedScroll: true,
+            displayIndentGuides: true
+        });
+        
+        const savedMode = localStorage.getItem('editorThemeMode') || 'dark';
+        setLightDark(savedMode);
+        
+        const savedColor = localStorage.getItem('editorAccentColor') || '#007aff';
+        const savedHoverColor = localStorage.getItem('editorAccentHoverColor') || '#005ecb';
+        document.documentElement.style.setProperty('--accent-color', savedColor);
+        document.documentElement.style.setProperty('--accent-hover-color', savedHoverColor);
+        document.querySelectorAll('.color-swatch').forEach(sw => {
+            sw.classList.toggle('active', sw.getAttribute('data-color') === savedColor);
+        });
+        
+        loadInitialCode(initialContent); 
+        aceEditor.session.getUndoManager().reset();
+        updateUndoRedoButtons();
+        updatePreview();
+
+        aceEditor.session.on('change', () => {
+            updatePreview();
+            saveCodeToLocalStorage();
+            updateUndoRedoButtons();
+
+            // SYNC FIX: अगर यूजर ने खुद कुछ बदला है, तो पुराना सर्च रिजल्ट हटा दें
+            if (document.getElementById('matchCounter').textContent !== '') {
+                // सिर्फ हाईलाइट्स और UI साफ़ करें, कर्सर न हिलाएं
+                clearAllMarks();
+                document.getElementById('matchCounter').textContent = '';
+                document.getElementById('findNavContainer').style.display = 'none';
+                document.getElementById('replaceAllBtn').style.display = 'none';
+            }
+        });
+
+        // SYNC FIX: सेव किया हुआ फ़ाइल नाम वापस लाएं
+        const savedFileName = localStorage.getItem('easyHtmlEditorFileName');
+        if (savedFileName) originalFileName = savedFileName;
+
+        const savedChanges = parseInt(localStorage.getItem('editorTotalChanges') || '0');
+        if (savedChanges > 0) {
+            totalChanges = savedChanges;
+            // नाम और काउंटर दोनों को लेबल में सिंक करने के लिए
+            updateChangeCounter(0);
+        } else {
+            // अगर कोई बदलाव नहीं है, तो भी फ़ाइल का नाम तो दिखाना ही है
+            document.getElementById('fileNameSP').textContent = `फाइल: ${originalFileName}`;
+            const findLabelName = document.getElementById('uploadedFileName');
+            if(findLabelName) findLabelName.innerHTML = `<i class="fas fa-file-code"></i> ${originalFileName}`;
+        }
+
+        if (window.innerWidth <= 768) { showSection('editor'); }
+    });
+
+
+    // सर्च कोड को फ्लेक्सिबल बनाने वाला फंक्शन
+   function createSmartSearchRegex(str) {
+        if (!str) return "";
+        // अब कोई 'Smart' काम नहीं होगा, सिर्फ Exact Match के लिए स्ट्रिंग वापस भेजेंगे
+        return str;
+    }
+    
+    // मोबाइल कीबोर्ड और लेआउट सिंक लॉजिक (Pixel-Perfect Version)
+    window.addEventListener('load', () => {
+        if (window.visualViewport) {
+            const vpv = window.visualViewport;
+            const initialHeight = vpv.height;
+            
+            vpv.addEventListener('resize', () => {
+                const isMobile = window.innerWidth <= 768;
+                if (!isMobile) return;
+
+                // कीबोर्ड डिटेक्शन (अगर हाइट 15% से ज़्यादा कम हो)
+                if (vpv.height < initialHeight * 0.85) {
+                    document.body.classList.add('keyboard-open');
+                } else {
+                    document.body.classList.remove('keyboard-open');
+                }
+
+                // एडिटर को नई हाइट के हिसाब से तुरंत एडजस्ट करना
+                if (aceEditor) {
+                    // छोटा सा डिले ताकि ब्राउज़र कीबोर्ड एनीमेशन पूरा कर ले
+                    setTimeout(() => {
+                        aceEditor.resize();
+                        aceEditor.renderer.updateFull();
+                        // कर्सर को व्यू में रखना
+                        aceEditor.renderer.scrollCursorIntoView();
+                    }, 150);
+                }
+            });
+        }
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (sidePanelOpen) return;
+        if (e.ctrlKey || e.metaKey) {
+            if (e.key === 's') { e.preventDefault(); downloadFile(); }
+        }
+        if (e.key === 'Escape' && sidePanelOpen) toggleSidePanel();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (sidePanel.classList.contains('open') && !sidePanel.contains(event.target) && !hamburgerMenu.contains(event.target)) {
+            toggleSidePanel();
+        }
+    });
+    </script>
+
+    <style>
+        /* --- AI Magic Panel Styles --- */
+        .magic-panel-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            z-index: 9999; display: none; flex-direction: column; padding: 20px;
+            color: #e0e0e0; font-family: 'Segoe UI', sans-serif; overflow-y: auto;
+        }
+        body.light-theme .magic-panel-overlay { background: rgba(240, 240, 240, 0.98); color: #222; }
+        
+        .magic-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px; }
+        .magic-header h2 { font-size: 20px; background: linear-gradient(90deg, #ff00cc, #3333ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        #aiRawInput {
+            width: 100%; height: 150px; background: rgba(0,0,0,0.3); border: 1.5px dashed var(--accent-color);
+            border-radius: 12px; color: #fff; padding: 15px; font-size: 14px; resize: none; outline: none; transition: 0.3s;
+        }
+        body.light-theme #aiRawInput { background: #fff; color: #333; }
+        #aiRawInput:focus { background: rgba(0,0,0,0.5); box-shadow: 0 0 20px rgba(var(--accent-color-rgb), 0.2); }
+
+        .magic-actions { display: flex; gap: 10px; margin: 20px 0; flex-wrap: wrap; }
+        
+        /* AJ Slim Card Analysis Style */
+        .analysis-container { width: 100%; margin-top: 10px; display: none; }
+        .analysis-list { display: flex; flex-direction: column; gap: 6px; }
+        .update-card { 
+            background: rgba(255,255,255,0.03); border-radius: 6px; 
+            padding: 6px; border-left: 3px solid #555; position: relative;
+        }
+        .update-card.matched { border-left-color: var(--accent-success-color); }
+        .update-card.missing { border-left-color: var(--accent-danger-color); }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .block-num { font-size: 9px; font-weight: 800; color: var(--text-muted-color); text-transform: uppercase; }
+        .status-mini { font-size: 9px; font-weight: bold; }
+        
+        .code-label { font-size: 7px; color: var(--accent-color); opacity: 0.7; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .code-box-mini { 
+            background: #0a0a0a; padding: 6px; border-radius: 4px; 
+            font-size: 8.5px; font-family: 'Monaco', 'Menlo', monospace; white-space: pre-wrap; 
+            word-break: break-all; line-height: 1.4; 
+            border: 1px solid rgba(255,255,255,0.1); box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .card-matched-icon { color: var(--accent-success-color); font-size: 10px; }
+        .card-missing-icon { color: var(--accent-danger-color); font-size: 10px; }
+        
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 10px; text-transform: uppercase; }
+        .status-match { background: #30d158; color: #fff; }
+        .status-missing { background: #ff453a; color: #fff; }
+        
+        .code-preview-box { 
+            background: #000; color: #0f0; padding: 8px; border-radius: 4px; 
+            max-height: 100px; overflow-y: auto; white-space: pre-wrap; font-family: 'Monaco', monospace;
+            border: 1px solid #333; opacity: 0.8;
+        }
+        body.light-theme .code-preview-box { background: #f8f8f8; color: #d11141; border-color: #ddd; }
+
+        .btn-magic-main { background: var(--accent-color); color: white; border: none; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; flex: 1; }
+        .btn-close-magic { 
+            background: var(--accent-color); color: white; border: none; 
+            width: 38px; height: 38px; border-radius: 12px; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: 0.3s;
+            z-index: 10001;
+        }
+        .btn-close-magic:hover { transform: scale(1.1); filter: brightness(1.2); }
+        .btn-close-magic i { font-size: 18px; color: white !important; }
+    </style>
+
+    <div id="magicPanel" class="magic-panel-overlay">
+        <div class="magic-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-wand-magic-sparkles" style="color: var(--accent-color); font-size: 20px;"></i>
+                <h2 style="margin:0;">AI Multi-Update Magic</h2>
+            </div>
+            <button type="button" class="btn-close-magic" onclick="closeMagicPanel()" title="Back to Editor">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+        
+        <p style="font-size: 13px; margin-bottom: 10px; opacity: 0.8;">AJ का पूरा रिस्पांस यहाँ पेस्ट करें:</p>
+        <textarea id="aiRawInput" placeholder="Paste AJ's message here..."></textarea>
+        
+        <div class="magic-actions" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-magic-main" id="btnScanAI" onclick="scanAIUpdate()"><i class="fas fa-sync"></i> Scan & Extract</button>
+                <button class="btn-magic-main" id="btnResetMagic" onclick="resetMagicPanel()" style="background: var(--accent-danger-color); flex: 0.4;"><i class="fas fa-trash"></i></button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-magic-main" id="btnTogglePreview" style="display:none; background: var(--accent-warning-color);" onclick="togglePreviewReport()"><i class="fas fa-eye"></i> Show Preview</button>
+                <button class="btn-magic-main" id="btnApplyAll" style="display:none; background: #30d158;" onclick="applyAllAIChanges()"><i class="fas fa-check-double"></i> Apply All</button>
+            </div>
+        </div>
+
+        <div class="analysis-container" id="analysisContainer">
+            <div style="margin-bottom: 10px; font-weight: bold; color: var(--accent-warning-color); font-size: 11px;">
+                <i class="fas fa-robot"></i> AI Smart Update Summary
+            </div>
+            <div id="analysisList" class="analysis-list">
+                <!-- Slim cards will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openMagicPanel() { 
+            const panel = document.getElementById('magicPanel');
+            panel.style.display = 'flex'; 
+            document.body.style.overflow = 'hidden';
+            
+            // AJ: रिफ्रेश के बाद बचा हुआ डेटा लोड करना
+            const savedData = localStorage.getItem('ajMagicData');
+            if (savedData) {
+                document.getElementById('aiRawInput').value = savedData;
+            }
+        }
+        
+        function closeMagicPanel() { 
+            document.getElementById('magicPanel').style.display = 'none'; 
+            document.body.style.overflow = 'auto'; 
+        }
+
+        // AJ: डेटा को टाइप करते ही सेव करना (Persistence)
+        document.getElementById('aiRawInput').addEventListener('input', (e) => {
+            localStorage.setItem('ajMagicData', e.target.value);
+        });
+
+        function resetMagicPanel() {
+            if(confirm("Bhai ji, क्या आप पेस्ट किया हुआ डेटा साफ़ करना चाहते हैं?")) {
+                document.getElementById('aiRawInput').value = '';
+                localStorage.removeItem('ajMagicData');
+                document.getElementById('analysisContainer').style.display = 'none';
+                document.getElementById('btnApplyAll').style.display = 'none';
+                document.getElementById('btnTogglePreview').style.display = 'none';
+                extractedUpdates = [];
+            }
+        }
+        function togglePreviewReport() {
+            const container = document.getElementById('analysisContainer');
+            const btn = document.getElementById('btnTogglePreview');
+            if (container.style.display === 'none' || container.style.display === '') {
+                container.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-eye-slash"></i> Hide Report';
+            } else {
+                container.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-eye"></i> View Report';
+            }
+        }
+
+        let extractedUpdates = [];
+
+        // AJ Helper: कोड की फालतू खाली जगह (Indentation) साफ़ करने के लिए
+        function cleanIndentation(str) {
+            const lines = str.split('\n');
+            const minIndent = lines.filter(l => l.trim()).reduce((acc, line) => {
+                const indent = line.match(/^\s*/)[0].length;
+                return indent < acc ? indent : acc;
+            }, Infinity);
+            return lines.map(l => l.slice(minIndent === Infinity ? 0 : minIndent)).join('\n').trim();
+        }
+
+        function scanAIUpdate() {
+            const rawText = document.getElementById('aiRawInput').value;
+            const analysisBody = document.getElementById('analysisBody');
+            const analysisContainer = document.getElementById('analysisContainer');
+            const btnApplyAll = document.getElementById('btnApplyAll');
+            const currentCode = aceEditor.getValue();
+
+            if (!rawText.trim()) {
+                showToast("भाई जी, पहले कुछ पेस्ट तो करो!");
+                return;
+            }
+
+            const analysisList = document.getElementById('analysisList');
+            analysisList.innerHTML = '';
+            extractedUpdates = [];
+
+            // AJ Ultra Specific Regex: अब ये सिर्फ़ html, js, और css ब्लॉक्स को ही पहचानेगा
+            const searchRegex = /Search वाले बॉक्स में ये डालें:[\s\S]{0,250}?```(?:html|javascript|js|css)?\n([\s\S]*?)\n```[\s\S]{0,400}?Replace वाले बॉक्स में ये डालें:[\s\S]{0,250}?```(?:html|javascript|js|css)?\n([\s\S]*?)\n```/g;
+            
+            let match;
+            let count = 0;
+            let totalMatchesFound = 0;
+
+            while ((match = searchRegex.exec(rawText)) !== null) {
+                count++;
+                // AJ: De-indentation और Clean logic
+                let sCodeRaw = match[1].replace(/\r/g, "");
+                let rCodeRaw = match[2].replace(/\r/g, "");
+                
+                let sCode = sCodeRaw.trim();
+                let rCode = rCodeRaw.trim();
+
+                // रिपोर्ट में दिखाने के लिए सुंदर वर्ज़न (De-indented)
+                const displaySearch = cleanIndentation(sCodeRaw);
+                const displayReplace = cleanIndentation(rCodeRaw);
+
+                const isFound = currentCode.includes(sCode);
+                if(isFound) totalMatchesFound++;
+
+                extractedUpdates.push({ search: sCode, replace: rCode, matched: isFound });
+
+                // AJ Slim Card creation
+                const card = document.createElement('div');
+                card.className = `update-card ${isFound ? 'matched' : 'missing'}`;
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="block-num">Block ${count}</span>
+                        <span class="status-mini" style="color:${isFound ? 'var(--accent-success-color)' : 'var(--accent-danger-color)'}">
+                            ${isFound ? '<i class="fas fa-check-circle"></i> MATCHED' : '<i class="fas fa-times-circle"></i> MISSING'}
+                        </span>
+                    </div>
+                    <div class="code-label" style="color:#ff9f0a;">🔍 SEARCH FOR:</div>
+                    <div class="code-box-mini" style="margin-bottom:6px; color: #ff9f0a; border-color: rgba(255,159,10,0.2);">${escapeHtml(displaySearch)}</div>
+                    <div class="code-label" style="color:#30d158;">✨ REPLACE WITH:</div>
+                    <div class="code-box-mini" style="color: #30d158; border-color: rgba(48,209,88,0.2);">${escapeHtml(displayReplace)}</div>
+                `;
+                analysisList.appendChild(card);
+            }
+
+            if (count === 0) {
+                showToast("कोई Search/Replace ब्लॉक नहीं मिला!");
+                analysisContainer.style.display = 'none';
+                document.getElementById('btnTogglePreview').style.display = 'none';
+            } else {
+                // AJ: Scan के बाद अब सीधे रिपोर्ट नहीं, सिर्फ बटन दिखेगा
+                analysisContainer.style.display = 'none'; 
+                document.getElementById('btnTogglePreview').style.display = 'inline-block';
+                document.getElementById('btnTogglePreview').innerHTML = `<i class="fas fa-eye"></i> View Report (${count})`;
+                showToast(`${count} ब्लॉक्स मिले, ${totalMatchesFound} मैच हुए!`);
+                if (totalMatchesFound > 0) {
+                    btnApplyAll.style.display = 'inline-block';
+                }
+            }
+        }
+
+        async function applyAllAIChanges() {
+            const confirmed = await showCustomConfirm(`क्या आप सभी ${extractedUpdates.filter(u => u.matched).length} मैचिंग बदलाव एक साथ करना चाहते हैं?`);
+            if (!confirmed) return;
+
+            const Range = ace.require('ace/range').Range;
+            let successCount = 0;
+            clearAllMarks(); 
+
+            // AJ Single Undo Trick: सभी बदलावों को एक ग्रुप में बांधना
+            aceEditor.session.getUndoManager().markUndoGroup();
+
+            extractedUpdates.forEach(update => {
+                if (update.matched) {
+                    aceEditor.find(update.search, { regExp: false, wrap: true });
+                    let foundRange = aceEditor.getSelectionRange();
+
+                    if (!foundRange.isEmpty()) {
+                        const startRow = foundRange.start.row;
+                        const startCol = foundRange.start.column;
+                        aceEditor.replace(update.replace);
+                        successCount++;
+
+                        const endPos = aceEditor.getCursorPosition();
+                        const newMarkRange = new Range(startRow, startCol, endPos.row, endPos.column);
+                        const markerId = aceEditor.session.addMarker(newMarkRange, "green-marker", "text");
+                        currentMarkers.push(markerId);
+                    }
+                }
+            });
+
+            // ग्रुप बंद करना
+            aceEditor.session.getUndoManager().markUndoGroup();
+
+            if (successCount > 0) {
+                updateChangeCounter(successCount);
+                showToast(`${successCount} बदलाव लागू और हाइलाइट किए गए! ✨`);
+                closeMagicPanel();
+                saveCodeToLocalStorage(); 
+            } else {
+                showToast("बदलने के लिए कुछ नहीं मिला!");
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
     </script>
 </body>
 </html>
