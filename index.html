@@ -2,137 +2,704 @@
 <html lang="hi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Railway Station Tracker</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>RailMitra: Station Alert & Navigation</title>
+    <!-- Leaflet CSS + JS for map (lightweight, mobile friendly) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Google Fonts for clean typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
     <style>
-        :root { --bg: #121212; --card: #1e1e1e; --accent: #ff9800; --text: #ffffff; }
-        body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; text-align: center; }
-        .hidden { display: none; }
-        .card { background: var(--card); border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .big-text { font-size: 2.5rem; font-weight: bold; color: var(--accent); margin: 10px 0; }
-        .btn { background: var(--accent); border: none; padding: 15px 30px; border-radius: 10px; color: black; font-weight: bold; cursor: pointer; width: 100%; margin: 5px 0; }
-        #track-line { height: 10px; background: #333; border-radius: 5px; position: relative; margin: 30px 0; }
-        #user-pos { position: absolute; top: -10px; width: 30px; height: 30px; background: red; border-radius: 50%; border: 3px solid white; transform: translateX(-50%); }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f4f7fc;
+            color: #1a2c3e;
+            padding: 0 0 20px 0;
+        }
+
+        /* Main container */
+        .app-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+            border-radius: 0;
+            overflow-x: hidden;
+        }
+
+        /* header */
+        .header {
+            padding: 20px 18px 10px;
+            background: #ffffff;
+            border-bottom: 1px solid #e9edf2;
+        }
+        .header h1 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #0066cc, #004d99);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+        .header p {
+            font-size: 0.85rem;
+            color: #5a6e7c;
+            margin-top: 4px;
+        }
+
+        /* direction selector card */
+        .direction-card {
+            background: white;
+            margin: 16px 16px 12px;
+            padding: 12px 16px;
+            border-radius: 28px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+            border: 1px solid #eef2f8;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .direction-btn-group {
+            display: flex;
+            gap: 12px;
+            background: #f0f4f9;
+            padding: 4px;
+            border-radius: 60px;
+        }
+        .dir-btn {
+            border: none;
+            background: transparent;
+            padding: 10px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+            color: #3a546d;
+        }
+        .dir-btn.active {
+            background: #0066cc;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,102,204,0.2);
+        }
+        .proceed-btn {
+            background: #00a86b;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .proceed-btn:active { transform: scale(0.97); background: #008f5a;}
+
+        /* main page (journey view) */
+        .journey-view {
+            display: none;
+            animation: fadeIn 0.25s ease;
+        }
+        .direction-selector-view {
+            display: block;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* next station hero */
+        .next-station-hero {
+            background: linear-gradient(115deg, #0b2b44 0%, #123e5e 100%);
+            margin: 16px;
+            border-radius: 36px;
+            padding: 24px 20px;
+            color: white;
+            box-shadow: 0 12px 20px rgba(0,0,0,0.1);
+        }
+        .next-label {
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            font-weight: 500;
+            text-transform: uppercase;
+            opacity: 0.8;
+        }
+        .station-name-large {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 10px 0 6px;
+            line-height: 1.2;
+            word-break: break-word;
+        }
+        .distance-big {
+            font-size: 3.2rem;
+            font-weight: 800;
+            display: inline-block;
+            margin-top: 8px;
+        }
+        .distance-unit {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+        .eta-text {
+            font-size: 1rem;
+            margin-top: 8px;
+            opacity: 0.9;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* alert alarm panel */
+        .alert-panel {
+            background: white;
+            margin: 8px 16px 20px;
+            border-radius: 28px;
+            padding: 18px;
+            border: 1px solid #eef2fa;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+        .alert-title {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #1f3b4c;
+        }
+        .alarm-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .alarm-card {
+            flex: 1;
+            min-width: 120px;
+            background: #f8fafd;
+            border-radius: 24px;
+            padding: 12px 10px;
+            text-align: center;
+            border: 1px solid #e2e9f0;
+        }
+        .alarm-icon {
+            font-size: 1.6rem;
+        }
+        .alarm-dist {
+            font-weight: 800;
+            font-size: 1.1rem;
+            margin: 6px 0;
+        }
+        .alarm-desc {
+            font-size: 0.7rem;
+            color: #5f7f9a;
+        }
+        .custom-alarm-row {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            background: #f3f6fb;
+            padding: 12px 14px;
+            border-radius: 44px;
+        }
+        .custom-input {
+            flex: 2;
+            padding: 12px 14px;
+            border-radius: 40px;
+            border: 1px solid #cddfea;
+            font-size: 1rem;
+            font-family: inherit;
+            background: white;
+        }
+        .set-alarm-btn {
+            background: #1e4663;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .active-alarm-badge {
+            background: #d9effa;
+            padding: 10px;
+            border-radius: 28px;
+            margin-top: 16px;
+            font-size: 0.8rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .clear-alarm {
+            background: none;
+            border: none;
+            color: #c7452c;
+            font-weight: 600;
+            font-size: 0.75rem;
+            text-decoration: underline;
+        }
+
+        /* upcoming stations list */
+        .upcoming-section {
+            margin: 20px 16px;
+        }
+        .section-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            padding-left: 4px;
+        }
+        .station-list {
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid #edf2f7;
+        }
+        .station-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid #eff3f8;
+            font-size: 0.95rem;
+        }
+        .station-item:last-child { border: none; }
+        .station-dist {
+            font-weight: 600;
+            color: #0066cc;
+        }
+
+        /* map container */
+        .map-container {
+            margin: 16px;
+            border-radius: 28px;
+            overflow: hidden;
+            border: 1px solid #e2e9f0;
+            height: 240px;
+            background: #eef3fc;
+        }
+        #liveMap {
+            height: 100%;
+            width: 100%;
+        }
+
+        .back-home {
+            display: inline-flex;
+            margin: 8px 16px 20px;
+            background: #eef2f7;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 40px;
+            font-weight: 500;
+            gap: 6px;
+            cursor: pointer;
+        }
+
+        footer {
+            text-align: center;
+            font-size: 0.7rem;
+            color: #8aa0b0;
+            padding: 20px 10px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+        @media (max-width: 450px) {
+            .station-name-large { font-size: 1.8rem; }
+            .distance-big { font-size: 2.4rem; }
+        }
     </style>
 </head>
 <body>
-
-    <div id="step-1" class="card">
-        <h2>दिशा चुनें (Select Direction)</h2>
-        <button class="btn" onclick="startApp('up')">Up (Manabar → Bacheli)</button>
-        <button class="btn" onclick="startApp('down')">Down (Bacheli → Manabar)</button>
-    </div>
-
-    <div id="step-2" class="hidden">
-        <div class="card">
-            <div>Next Station</div>
-            <div id="station-name" class="big-text">Loading...</div>
-            <div id="distance" class="big-text" style="font-size: 1.5rem;">0.0 km</div>
+<div class="app-container" id="appRoot">
+    <!-- Direction selection screen (initial) -->
+    <div id="directionScreen" class="direction-selector-view">
+        <div class="header">
+            <h1>🚆 RailMitra</h1>
+            <p>Smart station alerts & live tracking</p>
         </div>
-
-        <div class="card">
-            <label>Alarm Distance (km): </label>
-            <input type="number" id="alarm-dist" value="2" style="width: 50px; padding: 5px;">
-            <button class="btn" onclick="setGlobalAlarm()">Set Alarm for All</button>
-        </div>
-
-        <div class="card">
-            <h3>रूट प्रोग्रेस</h3>
-            <div id="track-line">
-                <div id="user-pos"></div>
+        <div class="direction-card">
+            <div class="direction-btn-group">
+                <button class="dir-btn" data-dir="up">⬆ UP (North/East)</button>
+                <button class="dir-btn" data-dir="down">⬇ DOWN (South/West)</button>
             </div>
-            <p id="status-msg">GPS का इंतज़ार है...</p>
+            <button id="confirmDirectionBtn" class="proceed-btn">➡ Start Journey</button>
+        </div>
+        <div style="padding: 20px; text-align: center; color: #6c86a0; font-size: 0.85rem;">
+            📍 Select travel direction to see next station, distance & set proximity alarms
         </div>
     </div>
 
-    <script>
-        const stations = [
-            {"station":"Manabar","lat":18.840492,"lon":82.695571},
-            {"station":"Jarati","lat":18.891874,"lon":82.665381},
-            {"station":"Maligura","lat":18.953505,"lon":82.638622},
-            {"station":"Chattariput","lat":18.922689,"lon":82.590097},
-            {"station":"Jeypore","lat":18.895231,"lon":82.555724},
-            {"station":"Dhanapur","lat":18.942042,"lon":82.513883},
-            {"station":"Khadapa","lat":18.982736,"lon":82.468617},
-            {"station":"Charamula Kusumi","lat":19.01612,"lon":82.415111},
-            {"station":"Kotapar Road","lat":19.041657,"lon":82.307835},
-            {"station":"Amagura","lat":19.068659,"lon":82.147901},
-            {"station":"Nakti Semra","lat":19.061776,"lon":82.073807},
-            {"station":"Jagdalpur","lat":19.066038,"lon":82.01414},
-            {"station":"Kumhar Marenga","lat":19.034652,"lon":81.946605},
-            {"station":"Tokapal","lat":19.006474,"lon":81.878587},
-            {"station":"Bade Arapur","lat":19.012629,"lon":81.828722},
-            {"station":"Dilmili","lat":18.987838,"lon":81.737704},
-            {"station":"Silak Jhori","lat":18.977709,"lon":81.67065},
-            {"station":"Kumar Sodra","lat":18.919577,"lon":81.686003},
-            {"station":"Kaklur","lat":18.883297,"lon":81.620983},
-            {"station":"Dabpal","lat":18.928082,"18.928082":81.488991},
-            {"station":"Gidam","lat":18.936727,"lon":81.412305},
-            {"station":"Dantewara","lat":18.908166,"lon":81.355817},
-            {"station":"Bacheli","lat":18.703747,"lon":81.238185}
-        ];
+    <!-- Journey main screen (appears after direction selected) -->
+    <div id="journeyScreen" class="journey-view">
+        <div class="header" style="padding-bottom: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h1 style="font-size: 1.5rem;">🚉 On Track</h1>
+                <button id="resetDirectionBtn" style="background: #f0f4fa; border: none; padding: 6px 14px; border-radius: 40px; font-size: 0.7rem;">⟳ Change Direction</button>
+            </div>
+            <p id="directionDisplayTag" style="font-size: 0.8rem;"></p>
+        </div>
 
-        let route = [];
-        let alarmDistance = 2;
+        <!-- Next station hero block -->
+        <div class="next-station-hero" id="nextStationHero">
+            <div class="next-label">📍 NEXT STATION</div>
+            <div class="station-name-large" id="nextStationName">--</div>
+            <div><span class="distance-big" id="nextDistanceKm">--</span><span class="distance-unit"> km</span></div>
+            <div class="eta-text" id="etaText">⏱️ ETA: -- min</div>
+        </div>
 
-        function startApp(dir) {
-            route = dir === 'up' ? [...stations] : [...stations].reverse();
-            document.getElementById('step-1').classList.add('hidden');
-            document.getElementById('step-2').classList.remove('hidden');
-            trackLocation();
-        }
+        <!-- Alert Panel -->
+        <div class="alert-panel">
+            <div class="alert-title">🔔 Alert Alarm (Proximity)</div>
+            <div class="alarm-grid">
+                <div class="alarm-card" data-preset="2">
+                    <div class="alarm-icon">🔴</div>
+                    <div class="alarm-dist">2 km Before</div>
+                    <div class="alarm-desc">Station Alert</div>
+                </div>
+                <div class="alarm-card" data-preset="0.5">
+                    <div class="alarm-icon">🟢</div>
+                    <div class="alarm-dist">500 m</div>
+                    <div class="alarm-desc">Tunnel Alert</div>
+                </div>
+            </div>
+            <div class="custom-alarm-row">
+                <input type="number" id="customDistanceInput" placeholder="Distance (km)" step="0.1" value="1.0" style="flex:2">
+                <button id="setCustomAlarmBtn" class="set-alarm-btn">⏰ Set Alarm</button>
+            </div>
+            <div id="activeAlarmDisplay" class="active-alarm-badge" style="display: none;">
+                <span>🔔 Active: <span id="activeAlarmValue"></span> km before station</span>
+                <button id="clearAlarmBtn" class="clear-alarm">Cancel</button>
+            </div>
+        </div>
 
-        function trackLocation() {
-            if (!navigator.geolocation) return alert("GPS not supported");
-            navigator.geolocation.watchPosition(pos => {
-                const { latitude, longitude } = pos.coords;
-                updateUI(latitude, longitude);
-            }, err => console.error(err), { enableHighAccuracy: true });
-        }
+        <!-- Upcoming stations list -->
+        <div class="upcoming-section">
+            <div class="section-title">📋 Upcoming Stations</div>
+            <div class="station-list" id="upcomingList">
+                <div class="station-item">Loading stations...</div>
+            </div>
+        </div>
 
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2-lat1) * Math.PI / 180;
-            const dLon = (lon2-lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-            return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
-        }
+        <!-- Live Map (no background wallpaper, just leaflet map) -->
+        <div class="map-container">
+            <div id="liveMap"></div>
+        </div>
+        <footer>📍 Real-time location • Proximity alarm triggers when distance ≤ alert threshold</footer>
+    </div>
+</div>
 
-        function updateUI(uLat, uLon) {
-            let nextStation = null;
-            let minDist = Infinity;
+<script>
+    // ---------- COMPLETE STATION DATA (given by user) ----------
+    const stationsDataRaw = [
+        {"station":"Manabar","lat":18.840492,"lon":82.695571},
+        {"station":"Jarati","lat":18.891874,"lon":82.665381},
+        {"station":"Maligura","lat":18.953505,"lon":82.638622},
+        {"station":"Chattariput","lat":18.922689,"lon":82.590097},
+        {"station":"Jeypore","lat":18.895231,"lon":82.555724},
+        {"station":"Dhanapur","lat":18.942042,"lon":82.513883},
+        {"station":"Khadapa","lat":18.982736,"lon":82.468617},
+        {"station":"Charamula Kusumi","lat":19.01612,"lon":82.415111},
+        {"station":"Kotapar Road","lat":19.041657,"lon":82.307835},
+        {"station":"Amagura","lat":19.068659,"lon":82.147901},
+        {"station":"Nakti Semra","lat":19.061776,"lon":82.073807},
+        {"station":"Jagdalpur","lat":19.066038,"lon":82.01414},
+        {"station":"Kumhar Marenga","lat":19.034652,"lon":81.946605},
+        {"station":"Tokapal","lat":19.006474,"lon":81.878587},
+        {"station":"Bade Arapur","lat":19.012629,"lon":81.828722},
+        {"station":"Dilmili","lat":18.987838,"lon":81.737704},
+        {"station":"Silak Jhori","lat":18.977709,"lon":81.67065},
+        {"station":"Kumar Sodra","lat":18.919577,"lon":81.686003},
+        {"station":"Kaklur","lat":18.883297,"lon":81.620983},
+        {"station":"Dabpal","lat":18.928082,"lon":81.488991},
+        {"station":"Gidam","lat":18.936727,"lon":81.412305},
+        {"station":"Dantewara","lat":18.908166,"lon":81.355817},
+        {"station":"Bacheli","lat":18.703747,"lon":81.238185}
+    ];
 
-            // अगले स्टेशन की पहचान (सबसे पास वाला जो आगे है)
-            for(let s of route) {
-                let d = calculateDistance(uLat, uLon, s.lat, s.lon);
-                // यहाँ हम लॉजिक लगा सकते हैं कि कौन सा स्टेशन बीत चुका है
-                if(d < minDist) {
-                    minDist = d;
-                    nextStation = s;
-                }
+    // We'll work with list ordered by original sequence (as per given order). 
+    // The direction "UP" means increasing index (towards Jagdalpur side) but user can interpret as forward order given.
+    // "DOWN" means reverse index order.
+    // We store master ordered list (from Manabar to Bacheli) as per user data. 
+    // UP direction = index order (Manabar -> ... -> Bacheli) ; DOWN = reverse (Bacheli -> ... -> Manabar)
+    const masterStations = [...stationsDataRaw];
+
+    // Helper: Haversine distance (km)
+    function getDistanceFromLatLon(lat1, lon1, lat2, lon2) {
+        const R = 6371; // km
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // App state
+    let currentDirection = null; // "up" or "down"
+    let currentOrderedStations = []; // array of station objects in travel order
+    let userLat = null, userLon = null;
+    let activeAlarmKm = null; // distance threshold (km)
+    let lastTriggeredStation = null;
+    let watchId = null;
+    let map = null;
+    let userMarker = null;
+    let stationMarkers = [];
+
+    // DOM elements
+    const directionScreen = document.getElementById('directionScreen');
+    const journeyScreen = document.getElementById('journeyScreen');
+    const confirmDirBtn = document.getElementById('confirmDirectionBtn');
+    const resetDirBtn = document.getElementById('resetDirectionBtn');
+    const directionDisplayTag = document.getElementById('directionDisplayTag');
+    const nextStationNameSpan = document.getElementById('nextStationName');
+    const nextDistanceKmSpan = document.getElementById('nextDistanceKm');
+    const etaTextSpan = document.getElementById('etaText');
+    const upcomingListDiv = document.getElementById('upcomingList');
+    const activeAlarmDiv = document.getElementById('activeAlarmDisplay');
+    const activeAlarmValueSpan = document.getElementById('activeAlarmValue');
+    const clearAlarmBtn = document.getElementById('clearAlarmBtn');
+    const setCustomAlarm = document.getElementById('setCustomAlarmBtn');
+    const customDistanceInput = document.getElementById('customDistanceInput');
+
+    // preset alarms
+    document.querySelectorAll('.alarm-card').forEach(card => {
+        card.addEventListener('click', () => {
+            let presetVal = parseFloat(card.getAttribute('data-preset'));
+            if (!isNaN(presetVal)) setActiveAlarm(presetVal);
+        });
+    });
+
+    function setActiveAlarm(kmVal) {
+        activeAlarmKm = kmVal;
+        activeAlarmValueSpan.innerText = activeAlarmKm;
+        activeAlarmDiv.style.display = 'flex';
+        // re-evaluate alarm immediately based on current distance
+        evaluateProximityAlarm();
+    }
+
+    function clearActiveAlarm() {
+        activeAlarmKm = null;
+        activeAlarmDiv.style.display = 'none';
+        lastTriggeredStation = null;
+    }
+
+    clearAlarmBtn.addEventListener('click', clearActiveAlarm);
+    setCustomAlarm.addEventListener('click', () => {
+        let val = parseFloat(customDistanceInput.value);
+        if (!isNaN(val) && val > 0) setActiveAlarm(val);
+        else alert("Please enter valid distance in km (>0)");
+    });
+
+    // Helper: find next station based on user position
+    function getNextStationAndDistance() {
+        if (!userLat || !userLon || !currentOrderedStations.length) return null;
+        let minDistance = Infinity;
+        let nextStationObj = null;
+        let nextIndex = -1;
+        for (let i = 0; i < currentOrderedStations.length; i++) {
+            const st = currentOrderedStations[i];
+            const dist = getDistanceFromLatLon(userLat, userLon, st.lat, st.lon);
+            // We consider "next" as the station that is ahead along direction, but we want the nearest upcoming station that is in front.
+            // More robust: find first station with distance less than current but ahead? simpler: we look for the station that is ahead with positive projection?
+            // Instead we compute index: we compare distances and also ensure we don't pick station behind. Use logic: select station with minimal distance but if there is any station with distance smaller than threshold?
+            // simpler: choose station with minimum distance among all (the closest) BUT we must ensure it's the upcoming one (since direction based ordering). However user could pass station, we need to find the closest station ahead.
+            // Robust: find the station with minimal distance among all, then determine if it's ahead in order based on index? if not, pick next index.
+            if (dist < minDistance) {
+                minDistance = dist;
+                nextStationObj = st;
+                nextIndex = i;
             }
+        }
+        if (!nextStationObj) return null;
+        // But we need the "next station" meaning upcoming, not behind. So if user is extremely close and passed it, we need the next index+1.
+        // Check if distance to closest is <0.05km (passed). Then next station is next in list
+        if (minDistance < 0.08 && nextIndex + 1 < currentOrderedStations.length) {
+            // probably passed this station
+            let candidateNext = currentOrderedStations[nextIndex+1];
+            let distNext = getDistanceFromLatLon(userLat, userLon, candidateNext.lat, candidateNext.lon);
+            return { station: candidateNext, distance: distNext, index: nextIndex+1 };
+        } else {
+            return { station: nextStationObj, distance: minDistance, index: nextIndex };
+        }
+    }
 
-            if(nextStation) {
-                document.getElementById('station-name').innerText = nextStation.station;
-                document.getElementById('distance').innerText = minDist.toFixed(2) + " km";
-                
-                if(minDist <= alarmDistance) {
-                    triggerAlarm(nextStation.station);
-                }
+    function updateUIAndAlarm() {
+        if (!currentDirection || !userLat) return;
+        const nextInfo = getNextStationAndDistance();
+        if (nextInfo) {
+            nextStationNameSpan.innerText = nextInfo.station.station;
+            let distKm = nextInfo.distance;
+            nextDistanceKmSpan.innerText = distKm.toFixed(2);
+            // ETA approx: assume avg speed 40 km/h -> 0.666 km per min, time = dist / speed*60 => min = dist/(40/60) = dist*1.5
+            let speedKmph = 45; // average train speed assumption
+            let etaMin = (distKm / speedKmph) * 60;
+            etaTextSpan.innerHTML = `⏱️ ETA: ${Math.round(etaMin)} min  •  ${distKm.toFixed(1)} km ahead`;
+            
+            // Build upcoming stations list (next 5)
+            let startIdx = nextInfo.index;
+            let upcoming = [];
+            for (let i = startIdx+1; i < Math.min(startIdx+6, currentOrderedStations.length); i++) {
+                let st = currentOrderedStations[i];
+                let d = getDistanceFromLatLon(userLat, userLon, st.lat, st.lon);
+                upcoming.push({name: st.station, dist: d.toFixed(1)});
+            }
+            if (upcoming.length === 0) upcomingListDiv.innerHTML = '<div class="station-item">🏁 End of line</div>';
+            else {
+                upcomingListDiv.innerHTML = upcoming.map(s => `<div class="station-item"><span>${s.name}</span><span class="station-dist">${s.dist} km</span></div>`).join('');
+            }
+            // Alarm evaluation
+            evaluateProximityAlarm(nextInfo);
+        } else {
+            nextStationNameSpan.innerText = "Terminus";
+            nextDistanceKmSpan.innerText = "0";
+            etaTextSpan.innerHTML = "🏁 Journey completed";
+        }
+        updateMapMarkers();
+    }
+
+    function evaluateProximityAlarm(nextInfoParam = null) {
+        if (!activeAlarmKm) return;
+        const next = nextInfoParam || getNextStationAndDistance();
+        if (next && next.distance <= activeAlarmKm) {
+            const stationKey = next.station.station;
+            if (lastTriggeredStation !== stationKey) {
+                lastTriggeredStation = stationKey;
+                // Trigger browser alert + visual
+                alert(`🔔 ALARM! Only ${next.distance.toFixed(2)} km left to ${next.station.station} (Alert threshold: ${activeAlarmKm} km)`);
+                // Also provide vibration if supported
+                if (navigator.vibrate) navigator.vibrate(200);
+                // Show on screen for 3 sec
+                const hero = document.getElementById('nextStationHero');
+                hero.style.transition = "0.1s";
+                hero.style.backgroundColor = "#b94b2c";
+                setTimeout(() => hero.style.backgroundColor = "", 600);
+            }
+        } else if (next && next.distance > activeAlarmKm) {
+            // reset trigger only if distance goes above threshold (for next station)
+            if (lastTriggeredStation === next.station.station) {
+                // only reset if distance > alarm + 0.2 km hysteresis
+                if (next.distance > activeAlarmKm + 0.2) lastTriggeredStation = null;
             }
         }
+    }
 
-        function triggerAlarm(name) {
-            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
-            // Sound play logic can be added here
-            document.getElementById('status-msg').innerText = "ALERT: " + name + " करीब है!";
+    // Direction logic: build ordered list
+    function setDirectionAndInit(dir) {
+        currentDirection = dir;
+        if (dir === 'up') {
+            currentOrderedStations = [...masterStations];
+            directionDisplayTag.innerHTML = '⬆ Direction: UP (Manabar → Bacheli)';
+        } else {
+            currentOrderedStations = [...masterStations].reverse();
+            directionDisplayTag.innerHTML = '⬇ Direction: DOWN (Bacheli → Manabar)';
         }
+        // reset alarm trigger memory
+        lastTriggeredStation = null;
+        // Reset alert if direction changed
+        if (userLat) updateUIAndAlarm();
+    }
 
-        function setGlobalAlarm() {
-            alarmDistance = parseFloat(document.getElementById('alarm-dist').value);
-            alert("अलार्म " + alarmDistance + " किमी पर सेट किया गया।");
+    // Geolocation & map init
+    function initGeolocationAndMap() {
+        if (!map) {
+            map = L.map('liveMap').setView([18.9, 82.4], 8);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                subdomains: 'abcd',
+                maxZoom: 18
+            }).addTo(map);
         }
-    </script>
+        if (navigator.geolocation) {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            watchId = navigator.geolocation.watchPosition((position) => {
+                userLat = position.coords.latitude;
+                userLon = position.coords.longitude;
+                if (userMarker) map.removeLayer(userMarker);
+                userMarker = L.marker([userLat, userLon], {icon: L.divIcon({className: 'custom-div-icon', html: '📍', iconSize: [24,24], popupAnchor: [0,-10]})}).addTo(map);
+                userMarker.bindPopup("Your Location").openPopup();
+                map.setView([userLat, userLon], 12);
+                if (currentDirection) updateUIAndAlarm();
+                else {
+                    // if direction not set but map live we just show stations
+                    updateMapMarkers();
+                }
+            }, (err) => { console.warn(err); alert("Location access needed for alarms"); }, { enableHighAccuracy: true, maximumAge: 5000 });
+        } else alert("Geolocation not supported");
+    }
+
+    function updateMapMarkers() {
+        if (!map) return;
+        stationMarkers.forEach(m => map.removeLayer(m));
+        stationMarkers = [];
+        let stationsToShow = currentDirection ? currentOrderedStations : masterStations;
+        stationsToShow.forEach(st => {
+            let marker = L.circleMarker([st.lat, st.lon], { radius: 5, fillColor: "#1e88e5", color: "#fff", weight: 1, fillOpacity: 0.8 }).addTo(map);
+            marker.bindPopup(st.station);
+            stationMarkers.push(marker);
+        });
+    }
+
+    // Show journey after direction confirm
+    confirmDirBtn.addEventListener('click', () => {
+        let activeDirBtn = document.querySelector('.dir-btn.active');
+        let dir = activeDirBtn ? activeDirBtn.getAttribute('data-dir') : null;
+        if (!dir) {
+            alert("Please select UP or DOWN direction");
+            return;
+        }
+        setDirectionAndInit(dir);
+        directionScreen.style.display = 'none';
+        journeyScreen.style.display = 'block';
+        if (!userLat) initGeolocationAndMap();
+        else {
+            updateUIAndAlarm();
+            updateMapMarkers();
+        }
+    });
+
+    resetDirBtn.addEventListener('click', () => {
+        if (watchId) navigator.geolocation.clearWatch(watchId);
+        watchId = null;
+        journeyScreen.style.display = 'none';
+        directionScreen.style.display = 'block';
+        currentDirection = null;
+        activeAlarmKm = null;
+        clearActiveAlarm();
+    });
+
+    // direction toggle active style
+    document.querySelectorAll('.dir-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.dir-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+        });
+    });
+    // set default active up
+    document.querySelector('.dir-btn[data-dir="up"]').classList.add('active');
+
+    // initial map load without direction
+    initGeolocationAndMap();
+    // ensure when no direction we just show stations on map
+    setTimeout(() => {
+        if (!currentDirection) updateMapMarkers();
+    }, 500);
+</script>
 </body>
 </html>
