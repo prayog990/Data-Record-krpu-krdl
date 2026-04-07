@@ -537,46 +537,54 @@ function closestStation(lat, lon) {
   return { idx, dist: minDist };
 }
 
-let lastPassedIdx = -1;
+let currentTargetIdx = -1;
 
 function nextStation(lat, lon) {
-  let currentTargetIdx = lastPassedIdx + 1;
-  
-  // Ensure we don't go out of bounds
-  if (currentTargetIdx >= stations.length) {
-    currentTargetIdx = stations.length - 1;
-  }
+    // 1. Initial Setup: Pehli baar segment dundho
+    if (currentTargetIdx === -1) {
+        let minSegmentError = Infinity;
+        let bestSegmentIdx = 0;
 
-  // Check current target distance
-  let distToTarget = haversine(lat, lon, stations[currentTargetIdx].lat, stations[currentTargetIdx].lon);
-
-  // SMART SWITCH: Agar hum target ke bahut paas hain (500m) 
-  // aur ab doori badhne lagi hai, ya hum agle station ke zyada paas aa gaye hain
-  if (currentTargetIdx < stations.length - 1) {
-    let distToNext = haversine(lat, lon, stations[currentTargetIdx + 1].lat, stations[currentTargetIdx + 1].lon);
-    
-    // Agar agla station ab current wale se zyada paas hai, toh switch karo
-    if (distToNext < distToTarget) {
-      lastPassedIdx = currentTargetIdx;
-      currentTargetIdx++;
-      distToTarget = distToNext;
+        for (let i = 0; i < stations.length - 1; i++) {
+            let d1 = haversine(lat, lon, stations[i].lat, stations[i].lon);
+            let d2 = haversine(lat, lon, stations[i+1].lat, stations[i+1].lon);
+            let total = haversine(stations[i].lat, stations[i].lon, stations[i+1].lat, stations[i+1].lon);
+            
+            // Agar user i aur i+1 ke beech hai, toh d1+d2 total ke lagbhag barabar hoga
+            let error = (d1 + d2) - total;
+            if (error < minSegmentError) {
+                minSegmentError = error;
+                bestSegmentIdx = i + 1; // Target agla station hoga
+            }
+        }
+        
+        // Agar user pehle station se bhi piche hai
+        let distToStart = haversine(lat, lon, stations[0].lat, stations[0].lon);
+        if (distToStart < haversine(lat, lon, stations[bestSegmentIdx].lat, stations[bestSegmentIdx].lon) && distToStart < 2) {
+            bestSegmentIdx = 0;
+        }
+        
+        currentTargetIdx = bestSegmentIdx;
     }
-  }
 
-  // Reset logic: Agar user route se bahut door chala jaye (demo purpose)
-  if (lastPassedIdx === -1) {
-    // Initial find: find closest station that is NOT passed
-    let minDist = Infinity;
-    stations.forEach((s, i) => {
-      let d = haversine(lat, lon, s.lat, s.lon);
-      if (d < minDist) {
-        minDist = d;
-        currentTargetIdx = i;
-      }
-    });
-  }
+    // 2. Monitoring & Automatic Switching
+    let distToCurrent = haversine(lat, lon, stations[currentTargetIdx].lat, stations[currentTargetIdx].lon);
 
-  return { idx: currentTargetIdx, dist: distToTarget };
+    // Agar hum agle station ke raste mein hain aur target cross ho gaya hai
+    if (currentTargetIdx < stations.length - 1) {
+        let distToNext = haversine(lat, lon, stations[currentTargetIdx + 1].lat, stations[currentTargetIdx + 1].lon);
+        
+        // SWITCH LOGIC: Agar agle station ki doori current wale se kam ho jaye 
+        // Ya hum current station ke itne paas aa jaye (50m) aur ab doori badhne lage
+        if (distToNext < distToCurrent) {
+            // Check logic: Kya humne waqayi current cross kar liya?
+            // Agar d(Current, Next) ≈ d(User, Next) + d(User, Current), matlab hum beech mein hain
+            currentTargetIdx++;
+            distToCurrent = distToNext;
+        }
+    }
+
+    return { idx: currentTargetIdx, dist: distToCurrent };
 }
 
 function showToast(msg, type='') {
