@@ -375,9 +375,12 @@
       <div class="header-title">RAIL TRACK</div>
       <div class="dir-indicator" id="dir-badge">UP ↑</div>
     </div>
-    <div class="gps-status">
-      <div class="gps-dot" id="gps-dot"></div>
-      <span id="gps-text">GPS...</span>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <button onclick="openAdmin()" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; color: var(--text); cursor: pointer; font-size: 1.1rem;">⚙️</button>
+      <div class="gps-status">
+        <div class="gps-dot" id="gps-dot"></div>
+        <span id="gps-text">GPS...</span>
+      </div>
     </div>
   </div>
 
@@ -448,6 +451,34 @@
       <button class="modal-cancel" onclick="closeModal()">Cancel</button>
       <button class="modal-confirm" onclick="confirmAlarm()">SET ALARM</button>
     </div>
+  </div>
+</div>
+
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal" style="max-height: 85vh; overflow-y: auto;">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🛠 Station Manager</div>
+    <div class="modal-sub">Naya Station ya Signal add karein</div>
+    
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+      <input class="alarm-input" id="new-stn-name" placeholder="Station/Signal Naam">
+      <input class="alarm-input" id="new-stn-lat" type="number" step="any" placeholder="Latitude (e.g. 19.0123)">
+      <input class="alarm-input" id="new-stn-lon" type="number" step="any" placeholder="Longitude (e.g. 82.0123)">
+      
+      <label style="font-size: 0.8rem; color: var(--text-dim);">Kis Station ke BAAD add karna hai?</label>
+      <select class="alarm-input" id="add-after-idx" style="background: var(--surface2);"></select>
+    </div>
+
+    <button class="modal-confirm" style="width: 100%; margin-bottom: 15px;" onclick="exportNewCode()">GENERATE NEW CODE</button>
+    
+    <div id="export-area" style="display:none;">
+      <label style="font-size: 0.8rem; color: var(--amber);">Niche wala code copy karein aur HTML mein STATIONS_RAW ki jagah replace karein:</label>
+      <textarea id="code-output" style="width: 100%; height: 150px; background: #000; color: #2ecc71; font-family: monospace; font-size: 0.7rem; border-radius: 8px; padding: 10px; margin-top: 5px;"></textarea>
+      <button class="modal-cancel" style="width: 100%; margin-top: 10px;" onclick="copyCode()">COPY CODE</button>
+    </div>
+
+    <button class="modal-cancel" style="width: 100%; margin-top: 15px;" onclick="closeAdmin()">Close</button>
   </div>
 </div>
 
@@ -865,9 +896,54 @@ function closeModal() {
   renderStationsList(nextIdx);
 }
 
-// Close modal on overlay click
-document.getElementById('alarm-modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeModal();
+function openAdmin() {
+  const modal = document.getElementById('admin-modal');
+  const select = document.getElementById('add-after-idx');
+  select.innerHTML = '<option value="-1">Sabse Shuru Mein (Manabar se pehle)</option>';
+  STATIONS_RAW.forEach((s, i) => {
+    select.innerHTML += `<option value="${i}">${s.station}</option>`;
+  });
+  modal.classList.add('open');
+}
+
+function closeAdmin() {
+  document.getElementById('admin-modal').classList.remove('open');
+  document.getElementById('export-area').style.display = 'none';
+}
+
+function exportNewCode() {
+  const name = document.getElementById('new-stn-name').value;
+  const lat = parseFloat(document.getElementById('new-stn-lat').value);
+  const lon = parseFloat(document.getElementById('new-stn-lon').value);
+  const afterIdx = parseInt(document.getElementById('add-after-idx').value);
+
+  if (!name || isNaN(lat) || isNaN(lon)) {
+    alert("Saari details sahi se bhariye!");
+    return;
+  }
+
+  // Create deep copy of current stations
+  let updatedList = JSON.parse(JSON.stringify(STATIONS_RAW));
+  const newStn = { "station": name, "lat": lat, "lon": lon };
+
+  // Insert at correct position
+  updatedList.splice(afterIdx + 1, 0, newStn);
+
+  const codeOutput = "const STATIONS_RAW = " + JSON.stringify(updatedList, null, 2) + ";";
+  document.getElementById('code-output').value = codeOutput;
+  document.getElementById('export-area').style.display = 'block';
+}
+
+function copyCode() {
+  const copyText = document.getElementById('code-output');
+  copyText.select();
+  document.execCommand("copy");
+  showToast("Code Copy Ho Gaya! Ab ise HTML mein replace karein.");
+}
+
+// Close Admin on overlay click
+document.getElementById('admin-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeAdmin();
 });
 </script>
 </body>
