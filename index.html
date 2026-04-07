@@ -537,33 +537,46 @@ function closestStation(lat, lon) {
   return { idx, dist: minDist };
 }
 
-function nextStation(lat, lon) {
-  let bestIdx = 0;
-  let minSegmentDiff = Infinity;
+let lastPassedIdx = -1;
 
-  // Check if user is before the first station
-  const distToFirst = haversine(lat, lon, stations[0].lat, stations[0].lon);
+function nextStation(lat, lon) {
+  let currentTargetIdx = lastPassedIdx + 1;
   
-  for (let i = 0; i < stations.length - 1; i++) {
-    const d1 = haversine(lat, lon, stations[i].lat, stations[i].lon);
-    const d2 = haversine(lat, lon, stations[i+1].lat, stations[i+1].lon);
-    const segmentDist = haversine(stations[i].lat, stations[i].lon, stations[i+1].lat, stations[i+1].lon);
+  // Ensure we don't go out of bounds
+  if (currentTargetIdx >= stations.length) {
+    currentTargetIdx = stations.length - 1;
+  }
+
+  // Check current target distance
+  let distToTarget = haversine(lat, lon, stations[currentTargetIdx].lat, stations[currentTargetIdx].lon);
+
+  // SMART SWITCH: Agar hum target ke bahut paas hain (500m) 
+  // aur ab doori badhne lagi hai, ya hum agle station ke zyada paas aa gaye hain
+  if (currentTargetIdx < stations.length - 1) {
+    let distToNext = haversine(lat, lon, stations[currentTargetIdx + 1].lat, stations[currentTargetIdx + 1].lon);
     
-    // Segment logic: d1 + d2 should be nearly equal to segmentDist if user is between them
-    const diff = (d1 + d2) - segmentDist;
-    if (diff < minSegmentDiff) {
-      minSegmentDiff = diff;
-      bestIdx = i + 1;
+    // Agar agla station ab current wale se zyada paas hai, toh switch karo
+    if (distToNext < distToTarget) {
+      lastPassedIdx = currentTargetIdx;
+      currentTargetIdx++;
+      distToTarget = distToNext;
     }
   }
 
-  // If user is way before the first station, first station is the next one
-  if (distToFirst < haversine(lat, lon, stations[bestIdx].lat, stations[bestIdx].lon) && distToFirst < 5) {
-    bestIdx = 0;
+  // Reset logic: Agar user route se bahut door chala jaye (demo purpose)
+  if (lastPassedIdx === -1) {
+    // Initial find: find closest station that is NOT passed
+    let minDist = Infinity;
+    stations.forEach((s, i) => {
+      let d = haversine(lat, lon, s.lat, s.lon);
+      if (d < minDist) {
+        minDist = d;
+        currentTargetIdx = i;
+      }
+    });
   }
 
-  const dist = haversine(lat, lon, stations[bestIdx].lat, stations[bestIdx].lon);
-  return { idx: bestIdx, dist };
+  return { idx: currentTargetIdx, dist: distToTarget };
 }
 
 function showToast(msg, type='') {
@@ -635,9 +648,7 @@ function updateUI() {
   const distStr = dist < 1 ? (dist * 1000).toFixed(0) + ' m' : dist.toFixed(1);
 
   document.getElementById('next-name').textContent = next.station;
-  document.getElementById('next-dist').innerHTML = dist < 1
-    ? `${(dist*1000).toFixed(0)}<span> m</span>`
-    : `${dist.toFixed(1)}<span> km</span>`;
+  document.getElementById('next-dist').innerHTML = `${(dist*1000).toFixed(0)}<span> m</span>`;
   document.getElementById('next-eta').textContent = `~${eta} min`;
   document.getElementById('current-loc').textContent = `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`;
 
@@ -664,7 +675,7 @@ function checkAlarms(nextIdx, distToNext) {
     
     if (stDist <= alarmDist && !firedAlarms.has(idx)) {
       firedAlarms.add(idx);
-      showToast(`🔔 ${stations[idx].station} - ${stDist.toFixed(1)} km dur!`, 'alarm');
+      showToast(`🔔 ${stations[idx].station} - ${(stDist*1000).toFixed(0)} m dur!`, 'alarm');
       
       const doVibrate = document.getElementById('pref-vibrate').checked;
       const doBeep = document.getElementById('pref-beep').checked;
@@ -698,7 +709,7 @@ function renderStationsList(nextIdx) {
     else if (isNext) dotClass = 'next';
     if (hasAlarm) dotClass = 'alarmed';
 
-    const distText = dist !== null ? (dist < 1 ? `${(dist*1000).toFixed(0)}m` : `${dist.toFixed(1)} km`) : '—';
+    const distText = dist !== null ? `${(dist*1000).toFixed(0)} m` : '—';
 
     row.innerHTML = `
       <div class="station-dot ${dotClass}"></div>
@@ -819,7 +830,7 @@ function confirmAlarm() {
     showToast(`✅ Sabhi ${stations.length} stations ke liye ${dist}km pehle alarm set!`);
   } else {
     alarms[alarmTarget] = dist;
-    showToast(`✅ ${stations[alarmTarget].station} — ${dist}km pehle alarm set!`);
+    showToast(`✅ ${stations[alarmTarget].station} — ${(dist*1000).toFixed(0)}m pehle alarm set!`);
   }
   closeModal();
   firedAlarms = new Set(); // reset fired alarms when re-setting
