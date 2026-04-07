@@ -382,6 +382,10 @@
   </div>
 
   <div class="tracker-content">
+    <div id="active-alarm-ui" style="display:none; background: var(--amber); color: #000; padding: 15px; border-radius: 12px; margin: 10px; text-align: center; animation: pulse 1s infinite; z-index: 50;">
+      <div style="font-weight: bold; font-size: 1.1rem;">🔔 STATION AA GAYA!</div>
+      <button onclick="stopAlarm()" style="margin-top:10px; background: #000; color: #fff; border:none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">STOP ALARM</button>
+    </div>
     <!-- NEXT STATION -->
     <div class="next-station-card">
       <div class="ns-label">▶ NEXT STATION</div>
@@ -428,8 +432,8 @@
     <div class="modal-sub" id="modal-sub">Station se pehle alert milega</div>
     <div class="alarm-input-row">
       <label>Distance:</label>
-      <input class="alarm-input" type="number" id="alarm-dist-input" value="2" min="0.1" step="0.1">
-      <span class="unit">km pehle</span>
+      <input class="alarm-input" type="number" id="alarm-dist-input" value="200" min="10" step="10">
+      <span class="unit">meters pehle</span>
     </div>
     <div class="alarm-settings" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; background: var(--surface2); padding: 10px; border-radius: 12px; border: 1px solid var(--border);">
       <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; cursor: pointer;">
@@ -439,10 +443,7 @@
         <input type="checkbox" id="pref-beep" checked> 🔊 Beep Sound
       </label>
     </div>
-    <div id="active-alarm-ui" style="display:none; background: var(--amber); color: #000; padding: 15px; border-radius: 12px; margin-bottom: 1rem; text-align: center; animation: pulse 1s infinite;">
-      <div style="font-weight: bold; font-size: 1.1rem;">🔔 STATION AA GAYA!</div>
-      <button onclick="stopAlarm()" style="margin-top:10px; background: #000; color: #fff; border:none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">STOP ALARM</button>
-    </div>
+    
     <div class="modal-btns">
       <button class="modal-cancel" onclick="closeModal()">Cancel</button>
       <button class="modal-confirm" onclick="confirmAlarm()">SET ALARM</button>
@@ -603,24 +604,40 @@ function selectDir(dir) {
 }
 
 function startTracking() {
-  initAudio(); // Unlock audio on click
+  initAudio();
   if (!direction) return;
+  localStorage.setItem('rail_dir', direction);
   stations = direction === 'UP' ? [...STATIONS_RAW] : [...STATIONS_RAW].reverse();
   document.getElementById('screen-direction').classList.remove('active');
   document.getElementById('screen-tracker').classList.add('active');
   document.getElementById('dir-badge').textContent = direction === 'UP' ? 'UP ↑' : 'DOWN ↓';
   document.getElementById('prog-from').textContent = stations[0].station;
   document.getElementById('prog-to').textContent = stations[stations.length-1].station;
+  
+  const savedAlarms = localStorage.getItem('rail_alarms');
+  if(savedAlarms) alarms = JSON.parse(savedAlarms);
+
   renderStationsList();
   startGPS();
   setInterval(updateUI, 3000);
 }
 
+window.onload = () => {
+  const savedDir = localStorage.getItem('rail_dir');
+  if(savedDir) {
+    selectDir(savedDir);
+    setTimeout(startTracking, 500);
+  }
+};
+
 function goBack() {
   if (watchId) navigator.geolocation.clearWatch(watchId);
+  localStorage.removeItem('rail_dir');
+  localStorage.removeItem('rail_alarms');
   document.getElementById('screen-tracker').classList.remove('active');
   document.getElementById('screen-direction').classList.add('active');
   alarms = {}; firedAlarms = new Set();
+  location.reload();
 }
 
 // ── GPS ───────────────────────────────────────────────────────────────────────
@@ -819,7 +836,7 @@ function openAlarmModal(idx) {
     sub.textContent = hasAlarm
       ? `${stations[idx].station} — Alarm update karo`
       : `${stations[idx].station} — Alarm set karo`;
-    if (hasAlarm) document.getElementById('alarm-dist-input').value = alarms[idx];
+    if (hasAlarm) document.getElementById('alarm-dist-input').value = (alarms[idx] * 1000).toFixed(0);
   }
   modal.classList.add('open');
 }
@@ -829,19 +846,21 @@ function closeModal() {
   alarmTarget = null;
 }
 
-function confirmAlarm() {
-  const dist = parseFloat(document.getElementById('alarm-dist-input').value);
-  if (isNaN(dist) || dist <= 0) { showToast('Valid distance dalo!'); return; }
+ function confirmAlarm() {
+  const distMeters = parseFloat(document.getElementById('alarm-dist-input').value);
+  if (isNaN(distMeters) || distMeters <= 0) { showToast('Valid distance dalo!'); return; }
+  const distKm = distMeters / 1000;
 
   if (alarmTarget === -1) {
-    stations.forEach((_, i) => { alarms[i] = dist; });
-    showToast(`✅ Sabhi ${stations.length} stations ke liye ${dist}km pehle alarm set!`);
+    stations.forEach((_, i) => { alarms[i] = distKm; });
+    showToast(`✅ Sabhi ke liye ${distMeters}m pehle alarm set!`);
   } else {
-    alarms[alarmTarget] = dist;
-    showToast(`✅ ${stations[alarmTarget].station} — ${(dist*1000).toFixed(0)}m pehle alarm set!`);
+    alarms[alarmTarget] = distKm;
+    showToast(`✅ ${stations[alarmTarget].station} — ${distMeters}m pehle alarm set!`);
   }
+  localStorage.setItem('rail_alarms', JSON.stringify(alarms));
   closeModal();
-  firedAlarms = new Set(); // reset fired alarms when re-setting
+  firedAlarms = new Set();
   const { idx: nextIdx } = userLat !== null ? nextStation(userLat, userLon) : { idx: -1 };
   renderStationsList(nextIdx);
 }
