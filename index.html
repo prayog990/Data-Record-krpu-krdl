@@ -1,964 +1,701 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Rail Tracker</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #0d0f14;
-    --surface: #161920;
-    --surface2: #1e2230;
-    --border: #2a2f3e;
-    --amber: #f5a623;
-    --amber-dim: #c47d0e;
-    --green: #2ecc71;
-    --red: #e74c3c;
-    --blue: #4a9eff;
-    --text: #e8eaf0;
-    --text-dim: #7a8099;
-    --text-muted: #4a5068;
-    --track: #f5a623;
-    --glow: rgba(245,166,35,0.15);
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KK Line Data Collector V1.6</title>
+    <style>
+        :root {
+            /* DARK MODE (DEFAULT) */
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-main: #ffffff;
+            --text-sec: #b3b3b3;
+            --accent: #FFC107;
+            --safe: #4CAF50;
+            --danger: #FF5252;
+            --line-color: #333;
+            --modal-bg: #1e1e1e;
+            --btn-bg: #2C2C2C;
+        }
 
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        /* LIGHT MODE OVERRIDES */
+        body.light-mode {
+            --bg-color: #f0f2f5;
+            --card-bg: #ffffff;
+            --text-main: #121212;
+            --text-sec: #555555;
+            --accent: #007bff; /* Blue for visibility */
+            --line-color: #ccc;
+            --modal-bg: #ffffff;
+            --btn-bg: #e0e0e0;
+        }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Rajdhani', sans-serif;
-    min-height: 100vh;
-    overflow-x: hidden;
-    max-width: 480px;
-    margin: 0 auto;
-    position: relative;
-  }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding-bottom: 20px;
+            user-select: none;
+            transition: background-color 0.3s, color 0.3s;
+        }
 
-  /* ── SCREENS ─────────────────────────────── */
-  .screen { display: none; min-height: 100vh; flex-direction: column; }
-  .screen.active { display: flex; }
+        /* Header */
+        .header {
+            background-color: var(--card-bg);
+            padding: 15px; position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 3px solid var(--accent);
+        }
+        .header h1 { margin: 0; font-size: 1.1rem; }
+        
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .settings-icon { font-size: 1.5rem; cursor: pointer; }
 
-  /* ── SCREEN 1: DIRECTION ─────────────────── */
-  #screen-direction {
-    align-items: center;
-    justify-content: center;
-    padding: 2rem 1.5rem;
-    background: radial-gradient(ellipse at 50% 30%, #1a1f30 0%, var(--bg) 70%);
-  }
+        .gps-status { font-size: 0.7rem; color: var(--danger); font-weight: bold; }
+        .gps-active { color: var(--safe); }
+        .coord-mini { font-family: monospace; font-size: 0.65rem; text-align: right; line-height: 1.1; }
 
-  .logo-area { text-align: center; margin-bottom: 3rem; }
-  .logo-icon {
-    width: 64px; height: 64px;
-    background: var(--amber);
-    border-radius: 16px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 2rem; margin: 0 auto 1rem;
-    box-shadow: 0 0 40px rgba(245,166,35,0.4);
-  }
-  .logo-title {
-    font-size: 2rem; font-weight: 700; letter-spacing: 4px;
-    color: var(--text);
-  }
-  .logo-sub {
-    font-size: 0.85rem; color: var(--text-dim); letter-spacing: 2px;
-    font-family: 'Space Mono', monospace;
-  }
+        /* Direction Switch */
+        .dir-switch {
+            display: flex; background: var(--btn-bg); margin: 10px;
+            border-radius: 8px; overflow: hidden; border: 1px solid var(--line-color);
+        }
+        .dir-btn {
+            flex: 1; padding: 12px; text-align: center;
+            color: var(--text-sec); font-weight: bold; cursor: pointer;
+            transition: 0.2s;
+        }
+        .dir-btn.active { background: var(--accent); color: #000; }
 
-  .route-badge {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 1rem 1.5rem;
-    text-align: center;
-    margin-bottom: 2.5rem;
-    width: 100%;
-  }
-  .route-badge .label { font-size: 0.75rem; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; }
-  .route-name { font-size: 1.1rem; font-weight: 600; color: var(--amber); margin-top: 0.25rem; }
+        /* Timeline */
+        .timeline-container { position: relative; padding: 10px 15px; max-width: 600px; margin: 0 auto; }
+        .track-line { position: absolute; left: 30px; top: 0; bottom: 0; width: 4px; background: var(--line-color); z-index: 0; }
 
-  .direction-title {
-    font-size: 1rem; color: var(--text-dim); letter-spacing: 3px;
-    text-transform: uppercase; text-align: center; margin-bottom: 1.5rem;
-  }
+        .station-card {
+            background: var(--card-bg); margin-bottom: 15px; margin-left: 30px;
+            padding: 15px; border-radius: 8px; position: relative; 
+            border-left: 5px solid var(--text-sec);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+        }
+        .station-card:active { transform: scale(0.98); }
+        .station-dot {
+            position: absolute; left: -37px; top: 50%; transform: translateY(-50%);
+            width: 14px; height: 14px; background: var(--text-sec);
+            border-radius: 50%; border: 3px solid var(--bg-color); z-index: 1;
+        }
+        .station-card.saved-some { border-left-color: var(--accent); }
+        .station-card.saved-some .station-dot { background: var(--accent); }
 
-  .direction-cards { display: flex; gap: 1rem; width: 100%; margin-bottom: 2rem; }
-  .dir-card {
-    flex: 1;
-    background: var(--surface);
-    border: 2px solid var(--border);
-    border-radius: 16px;
-    padding: 1.5rem 1rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    position: relative;
-    overflow: hidden;
-  }
-  .dir-card::before {
-    content: '';
-    position: absolute; inset: 0;
-    background: var(--glow);
-    opacity: 0;
-    transition: opacity 0.2s;
-  }
-  .dir-card:hover::before, .dir-card.selected::before { opacity: 1; }
-  .dir-card.selected { border-color: var(--amber); }
-  .dir-card.selected .dir-arrow { color: var(--amber); }
-  .dir-card.selected .dir-label { color: var(--amber); }
+        .stn-header { display: flex; justify-content: space-between; align-items: center; }
+        .stn-name { font-size: 1.1rem; font-weight: bold; }
+        .stn-km { font-size: 0.9rem; color: var(--accent); font-family: monospace; font-weight: bold;}
+        .stn-type { font-size: 0.7rem; color: var(--text-sec); margin-top: 2px; text-transform: uppercase; }
 
-  .dir-arrow { font-size: 2.5rem; margin-bottom: 0.5rem; color: var(--text-dim); transition: all 0.2s; }
-  .dir-label { font-size: 1rem; font-weight: 700; letter-spacing: 2px; color: var(--text-dim); transition: all 0.2s; }
-  .dir-endpoints { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.4rem; font-family: 'Space Mono', monospace; }
+        .data-badges { margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap; }
+        .badge { font-size: 0.65rem; background: var(--btn-bg); padding: 2px 5px; border-radius: 3px; color: var(--text-sec); }
+        .badge.done { background: var(--safe); color: #fff; }
 
-  .start-btn {
-    width: 100%;
-    background: var(--amber);
-    color: #0d0f14;
-    border: none;
-    border-radius: 14px;
-    padding: 1.1rem;
-    font-size: 1.2rem;
-    font-weight: 700;
-    font-family: 'Rajdhani', sans-serif;
-    letter-spacing: 3px;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 20px rgba(245,166,35,0.3);
-  }
-  .start-btn:active { transform: scale(0.97); }
-  .start-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        /* Modals */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); z-index: 1000;
+            display: none; flex-direction: column; justify-content: flex-end;
+        }
+        .modal-overlay.open { display: flex; }
+        
+        .modal-content {
+            background: var(--modal-bg); 
+            border-top-left-radius: 20px; border-top-right-radius: 20px;
+            padding: 20px; max-height: 85vh; overflow-y: auto; 
+            border-top: 4px solid var(--accent);
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-  /* ── SCREEN 2: TRACKER ───────────────────── */
-  #screen-tracker { padding: 0; }
+        .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; border-bottom: 1px solid var(--line-color); padding-bottom: 10px; }
+        .close-btn { background: none; border: none; color: var(--text-main); font-size: 1.5rem; cursor: pointer;}
 
-  .header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 1rem 1.2rem 0.8rem;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .header-left { display: flex; align-items: center; gap: 0.6rem; }
-  .back-btn {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.4rem 0.6rem;
-    color: var(--text); cursor: pointer; font-size: 1rem;
-  }
-  .header-title { font-size: 1.1rem; font-weight: 700; letter-spacing: 2px; }
-  .dir-indicator {
-    background: var(--glow);
-    border: 1px solid var(--amber-dim);
-    color: var(--amber);
-    font-size: 0.7rem; font-weight: 700; letter-spacing: 1px;
-    padding: 0.3rem 0.6rem; border-radius: 6px;
-  }
-  .gps-status {
-    display: flex; align-items: center; gap: 0.4rem;
-    font-size: 0.75rem; font-family: 'Space Mono', monospace;
-  }
-  .gps-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-    background: var(--red);
-    animation: pulse 1.5s infinite;
-  }
-  .gps-dot.active { background: var(--green); }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        /* Signal Inputs */
+        .signal-row {
+            background: var(--btn-bg); margin-bottom: 12px; padding: 12px;
+            border-radius: 8px; border: 1px solid var(--line-color);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .signal-row.captured { border-color: var(--safe); background: rgba(76, 175, 80, 0.1); }
+        
+        .row-top { display: flex; justify-content: space-between; align-items: center; }
+        .signal-label { font-weight: bold; font-size: 0.95rem; }
+        
+        .row-bottom { display: flex; gap: 10px; align-items: center; }
+        
+        .km-input {
+            background: var(--bg-color); border: 1px solid var(--line-color); color: var(--text-main);
+            padding: 10px; border-radius: 5px; width: 90px; text-align: center;
+            font-family: monospace; font-weight: bold; font-size: 1rem;
+        }
+        
+        .capture-btn {
+            flex: 1; background: #444; color: white; border: none;
+            padding: 12px; border-radius: 5px; font-weight: bold;
+            display: flex; justify-content: center; gap: 5px; cursor: pointer;
+        }
+        .capture-btn.active { background: var(--safe); color: #fff; }
 
-  /* NEXT STATION CARD */
-  .next-station-card {
-    margin: 1rem;
-    background: linear-gradient(135deg, var(--surface2) 0%, #1a1f2e 100%);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 1.4rem;
-    position: relative;
-    overflow: hidden;
-  }
-  .next-station-card::after {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--amber), transparent);
-    border-radius: 20px 20px 0 0;
-  }
-  .ns-label {
-    font-size: 0.7rem; letter-spacing: 3px; color: var(--text-dim);
-    text-transform: uppercase; margin-bottom: 0.6rem;
-    font-family: 'Space Mono', monospace;
-  }
-  .ns-main { display: flex; align-items: flex-end; justify-content: space-between; }
-  .ns-name { font-size: 2.2rem; font-weight: 700; color: var(--text); line-height: 1; }
-  .ns-dist {
-    font-size: 2.5rem; font-weight: 700; color: var(--amber);
-    font-family: 'Space Mono', monospace; line-height: 1;
-  }
-  .ns-dist span { font-size: 1rem; font-weight: 400; color: var(--amber-dim); }
-  .ns-meta { display: flex; gap: 1.5rem; margin-top: 0.8rem; }
-  .ns-meta-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--text-dim); }
-  .ns-meta-item .icon { font-size: 0.9rem; }
+        /* Settings Menu Items */
+        .menu-list { display: flex; flex-direction: column; gap: 10px; }
+        .menu-btn {
+            background: var(--btn-bg); color: var(--text-main); border: 1px solid var(--line-color);
+            padding: 15px; border-radius: 8px; text-align: left; font-size: 1rem;
+            display: flex; align-items: center; gap: 15px; cursor: pointer;
+        }
+        .menu-btn:active { opacity: 0.8; }
+        .menu-icon { font-size: 1.2rem; }
 
-  /* PROGRESS BAR */
-  .progress-section { margin: 0 1rem 1rem; }
-  .progress-label { display: flex; justify-content: space-between; font-size: 0.7rem; color: var(--text-muted); font-family: 'Space Mono', monospace; margin-bottom: 0.4rem; }
-  .progress-bar {
-    height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%; background: linear-gradient(90deg, var(--amber-dim), var(--amber));
-    border-radius: 3px; transition: width 1s ease;
-  }
+        /* Preview Box */
+        .preview-box {
+            background: #111; color: #0f0; 
+            font-family: monospace; padding: 10px; 
+            border-radius: 5px; white-space: pre-wrap;
+            font-size: 0.7rem; overflow-x: auto;
+            max-height: 50vh; margin-bottom: 10px;
+        }
 
-  /* MINI MAP */
-  .map-section {
-    margin: 0 1rem 1rem;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    overflow: hidden;
-    height: 160px;
-    position: relative;
-  }
-  .map-canvas { width: 100%; height: 100%; }
-  .map-label {
-    position: absolute; top: 8px; left: 10px;
-    font-size: 0.65rem; color: var(--text-dim); letter-spacing: 1px;
-    font-family: 'Space Mono', monospace;
-    background: rgba(13,15,20,0.7); padding: 2px 6px; border-radius: 4px;
-  }
+        .blink { animation: blinker 1.5s linear infinite; }
+        @keyframes blinker { 50% { opacity: 0; } }
 
-  /* UPCOMING STATIONS */
-  .section-header {
-    padding: 0 1rem 0.5rem;
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .section-title { font-size: 0.7rem; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; font-family: 'Space Mono', monospace; }
-  .alarm-all-btn {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text-dim); font-family: 'Rajdhani', sans-serif;
-    font-size: 0.75rem; letter-spacing: 1px; padding: 0.3rem 0.7rem;
-    border-radius: 6px; cursor: pointer; transition: all 0.2s;
-  }
-  .alarm-all-btn:hover { border-color: var(--amber); color: var(--amber); }
-
-  .stations-list { padding: 0 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
-  .station-row {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 0.8rem 1rem;
-    display: flex; align-items: center; gap: 0.8rem;
-    transition: border-color 0.2s;
-  }
-  .station-row.current { border-color: var(--amber); }
-  .station-row.passed { opacity: 0.45; }
-  .station-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    background: var(--text-muted); flex-shrink: 0;
-    border: 2px solid var(--surface2);
-  }
-  .station-dot.next { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
-  .station-dot.passed { background: var(--text-muted); }
-  .station-dot.upcoming { background: var(--blue); }
-  .station-dot.alarmed { background: var(--green); box-shadow: 0 0 6px var(--green); }
-  .station-info { flex: 1; }
-  .station-name { font-size: 1rem; font-weight: 600; }
-  .station-dist { font-size: 0.75rem; color: var(--text-dim); font-family: 'Space Mono', monospace; }
-  .alarm-btn {
-    background: transparent; border: 1px solid var(--border);
-    border-radius: 8px; padding: 0.35rem 0.5rem;
-    cursor: pointer; font-size: 0.85rem; color: var(--text-dim);
-    transition: all 0.2s; flex-shrink: 0;
-  }
-  .alarm-btn.set { border-color: var(--green); color: var(--green); background: rgba(46,204,113,0.08); }
-
-  /* ALARM MODAL */
-  .modal-overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(0,0,0,0.75); z-index: 100;
-    align-items: flex-end; justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 24px 24px 0 0;
-    padding: 1.5rem 1.5rem 2rem;
-    width: 100%; max-width: 480px;
-    animation: slideUp 0.3s ease;
-  }
-  @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
-  .modal-handle {
-    width: 40px; height: 4px; background: var(--border);
-    border-radius: 2px; margin: 0 auto 1.2rem;
-  }
-  .modal-title { font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; }
-  .modal-sub { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 1.5rem; }
-  .alarm-input-row { display: flex; align-items: center; gap: 0.8rem; margin-bottom: 1.2rem; }
-  .alarm-input-row label { font-size: 0.9rem; color: var(--text-dim); flex-shrink: 0; }
-  .alarm-input {
-    flex: 1; background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 0.7rem 1rem;
-    color: var(--text); font-family: 'Space Mono', monospace; font-size: 1rem;
-    outline: none;
-  }
-  .alarm-input:focus { border-color: var(--amber); }
-  .alarm-input-row .unit { color: var(--text-dim); font-size: 0.85rem; flex-shrink: 0; }
-  .modal-btns { display: flex; gap: 0.8rem; }
-  .modal-cancel {
-    flex: 1; background: var(--surface2); border: 1px solid var(--border);
-    color: var(--text); border-radius: 12px; padding: 0.9rem;
-    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 600;
-    cursor: pointer;
-  }
-  .modal-confirm {
-    flex: 2; background: var(--amber); border: none;
-    color: #0d0f14; border-radius: 12px; padding: 0.9rem;
-    font-family: 'Rajdhani', sans-serif; font-size: 1rem; font-weight: 700;
-    letter-spacing: 2px; cursor: pointer;
-  }
-
-  /* ALARM TOAST */
-  .toast {
-    display: none; position: fixed; top: 1rem; left: 50%; transform: translateX(-50%);
-    background: var(--green); color: #000; border-radius: 12px;
-    padding: 0.8rem 1.5rem; font-weight: 700; font-size: 1rem; z-index: 200;
-    box-shadow: 0 4px 20px rgba(46,204,113,0.4);
-    white-space: nowrap;
-  }
-  .toast.alarm { background: var(--amber); color: #000; }
-  .toast.show { display: block; animation: fadeInOut 3s forwards; }
-  @keyframes fadeInOut { 0%{opacity:0;top:0.5rem} 10%{opacity:1;top:1rem} 80%{opacity:1;top:1rem} 100%{opacity:0;top:0.5rem} }
-
-  /* SCROLLABLE CONTENT */
-  .tracker-content { flex: 1; overflow-y: auto; padding-bottom: 2rem; }
-  .tracker-content::-webkit-scrollbar { width: 0; }
-</style>
+    </style>
 </head>
 <body>
 
-<!-- SCREEN 1: DIRECTION -->
-<div id="screen-direction" class="screen active">
-  <div class="logo-area">
-    <div class="logo-icon">🚂</div>
-    <div class="logo-title">RAIL TRACK</div>
-    <div class="logo-sub">LIVE STATION TRACKER</div>
-  </div>
-  <div class="route-badge">
-    <div class="label">ROUTE</div>
-    <div class="route-name">Manabar ↔ Bacheli Line</div>
-  </div>
-  <div class="direction-title">Direction Chuniye</div>
-  <div class="direction-cards">
-    <div class="dir-card" id="card-up" onclick="selectDir('UP')">
-      <div class="dir-arrow">⬆</div>
-      <div class="dir-label">UP</div>
-      <div class="dir-endpoints">Manabar<br>→ Bacheli</div>
-    </div>
-    <div class="dir-card" id="card-down" onclick="selectDir('DOWN')">
-      <div class="dir-arrow">⬇</div>
-      <div class="dir-label">DOWN</div>
-      <div class="dir-endpoints">Bacheli<br>→ Manabar</div>
-    </div>
-  </div>
-  <button class="start-btn" id="start-btn" disabled onclick="startTracking()">
-    TRACKING SHURU KARO
-  </button>
-</div>
-
-<!-- SCREEN 2: TRACKER -->
-<div id="screen-tracker" class="screen">
-  <div class="header">
-    <div class="header-left">
-      <button class="back-btn" onclick="goBack()">←</button>
-      <div class="header-title">RAIL TRACK</div>
-      <div class="dir-indicator" id="dir-badge">UP ↑</div>
-    </div>
-    <div style="display: flex; align-items: center; gap: 10px;">
-      <button onclick="openAdmin()" style="background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 5px 8px; color: var(--text); cursor: pointer; font-size: 1.1rem;">⚙️</button>
-      <div class="gps-status">
-        <div class="gps-dot" id="gps-dot"></div>
-        <span id="gps-text">GPS...</span>
-      </div>
-    </div>
-  </div>
-
-  <div class="tracker-content">
-    <div id="active-alarm-ui" style="display:none; background: var(--amber); color: #000; padding: 15px; border-radius: 12px; margin: 10px; text-align: center; animation: pulse 1s infinite; z-index: 50;">
-      <div style="font-weight: bold; font-size: 1.1rem;">🔔 STATION AA GAYA!</div>
-      <button onclick="stopAlarm()" style="margin-top:10px; background: #000; color: #fff; border:none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">STOP ALARM</button>
-    </div>
-    <!-- NEXT STATION -->
-    <div class="next-station-card">
-      <div class="ns-label">▶ NEXT STATION</div>
-      <div class="ns-main">
-        <div class="ns-name" id="next-name">—</div>
-        <div class="ns-dist" id="next-dist">—<span> km</span></div>
-      </div>
-      <div class="ns-meta">
-        <div class="ns-meta-item"><span class="icon">⏱</span><span id="next-eta">— min</span></div>
-        <div class="ns-meta-item"><span class="icon">📍</span><span id="current-loc">Locating...</span></div>
-        <div class="ns-meta-item"><span class="icon">🔔</span><span id="alarm-status">No Alarm</span></div>
-      </div>
+    <!-- HEADER -->
+    <div class="header">
+        <div>
+            <h1>RAIL LOG V1.6</h1>
+            <div id="gpsStatus" class="gps-status blink">Waiting for GPS...</div>
+        </div>
+        <div class="header-right">
+            <div id="currentLatLong" class="coord-mini">
+                00.0000<br>00.0000
+            </div>
+            <div class="settings-icon" onclick="openSettings()">⚙️</div>
+        </div>
     </div>
 
-    <!-- PROGRESS -->
-    <div class="progress-section">
-      <div class="progress-label">
-        <span id="prog-from">—</span>
-        <span id="prog-to">—</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+    <!-- DIRECTION SWITCH -->
+    <div class="dir-switch">
+        <div class="dir-btn active" id="btn-UP" onclick="setDirection('UP')">UP (KRPU ➡ KRDL)</div>
+        <div class="dir-btn" id="btn-DN" onclick="setDirection('DN')">DN (KRDL ➡ KRPU)</div>
     </div>
 
-    <!-- MINI MAP -->
-    <div class="map-section">
-      <div class="map-label">LIVE MAP</div>
-      <canvas class="map-canvas" id="map-canvas"></canvas>
+    <!-- TIMELINE -->
+    <div class="timeline-container">
+        <div class="track-line"></div>
+        <div id="stationList"></div>
     </div>
 
-    <!-- UPCOMING STATIONS -->
-    <div class="section-header">
-      <div class="section-title">ALL STATIONS</div>
-      <button class="alarm-all-btn" onclick="openAlarmModal(-1)">🔔 Set All Alarms</button>
-    </div>
-    <div class="stations-list" id="stations-list"></div>
-  </div>
-</div>
-
-<!-- ALARM MODAL -->
-<div class="modal-overlay" id="alarm-modal">
-  <div class="modal">
-    <div class="modal-handle"></div>
-    <div class="modal-title">🔔 Alarm Set Karo</div>
-    <div class="modal-sub" id="modal-sub">Station se pehle alert milega</div>
-    <div class="alarm-input-row">
-      <label>Distance:</label>
-      <input class="alarm-input" type="number" id="alarm-dist-input" value="200" min="10" step="10">
-      <span class="unit">meters pehle</span>
-    </div>
-    <div class="alarm-settings" style="display: flex; gap: 1rem; margin-bottom: 1.5rem; background: var(--surface2); padding: 10px; border-radius: 12px; border: 1px solid var(--border);">
-      <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-        <input type="checkbox" id="pref-vibrate" checked> 📳 Vibrate
-      </label>
-      <label style="font-size: 0.85rem; display: flex; align-items: center; gap: 5px; cursor: pointer;">
-        <input type="checkbox" id="pref-beep" checked> 🔊 Beep Sound
-      </label>
-    </div>
-    
-    <div class="modal-btns">
-      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
-      <button class="modal-confirm" onclick="confirmAlarm()">SET ALARM</button>
-    </div>
-  </div>
-</div>
-
-<!-- ADMIN MODAL -->
-<div class="modal-overlay" id="admin-modal">
-  <div class="modal" style="max-height: 85vh; overflow-y: auto;">
-    <div class="modal-handle"></div>
-    <div class="modal-title">🛠 Station Manager</div>
-    <div class="modal-sub">Naya Station ya Signal add karein</div>
-    
-    <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
-      <input class="alarm-input" id="new-stn-name" placeholder="Station/Signal Naam">
-      <input class="alarm-input" id="new-stn-lat" type="number" step="any" placeholder="Latitude (e.g. 19.0123)">
-      <input class="alarm-input" id="new-stn-lon" type="number" step="any" placeholder="Longitude (e.g. 82.0123)">
-      
-      <label style="font-size: 0.8rem; color: var(--text-dim);">Kis Station ke BAAD add karna hai?</label>
-      <select class="alarm-input" id="add-after-idx" style="background: var(--surface2);"></select>
-      <select class="alarm-input" id="new-stn-type" style="background: var(--surface2);">
-        <option value="STN">Station Building</option>
-        <option value="SIGNAL">Signal</option>
-        <option value="NS">Neutral Section</option>
-        <option value="TUNNEL">Tunnel</option>
-      </select>
-      <select class="alarm-input" id="new-stn-dir" style="background: var(--surface2);">
-        <option value="BOTH">Both Directions</option>
-        <option value="UP">Only UP</option>
-        <option value="DOWN">Only DOWN</option>
-      </select>
+    <!-- SIGNAL INPUT MODAL -->
+    <div class="modal-overlay" id="signalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h2 id="modalTitle" style="margin:0;">STATION</h2>
+                    <span id="modalSub" style="font-size: 0.8rem; color:var(--text-sec);">Signals</span>
+                </div>
+                <button class="close-btn" onclick="closeModal('signalModal')">✖</button>
+            </div>
+            <div id="signalGrid"></div>
+        </div>
     </div>
 
-    <button class="modal-confirm" style="width: 100%; margin-bottom: 15px;" onclick="exportNewCode()">GENERATE NEW CODE</button>
-    
-    <div id="export-area" style="display:none;">
-      <label style="font-size: 0.8rem; color: var(--amber);">Niche wala code copy karein aur HTML mein STATIONS_RAW ki jagah replace karein:</label>
-      <textarea id="code-output" style="width: 100%; height: 150px; background: #000; color: #2ecc71; font-family: monospace; font-size: 0.7rem; border-radius: 8px; padding: 10px; margin-top: 5px;"></textarea>
-      <button class="modal-cancel" style="width: 100%; margin-top: 10px;" onclick="copyCode()">COPY CODE</button>
+    <!-- SETTINGS MENU MODAL -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content" style="padding-bottom: 40px;">
+            <div class="modal-header">
+                <h2 style="margin:0;">SETTINGS</h2>
+                <button class="close-btn" onclick="closeModal('settingsModal')">✖</button>
+            </div>
+            
+            <div class="menu-list">
+                <!-- Theme Toggle -->
+                <button class="menu-btn" onclick="toggleTheme()">
+                    <span class="menu-icon">🌓</span> Day / Night Mode
+                </button>
+
+                <hr style="width:100%; border: 0.5px solid var(--line-color);">
+
+                <!-- Backup & Restore -->
+                <button class="menu-btn" onclick="downloadBackup()">
+                    <span class="menu-icon">💾</span> Backup Data (.JSON)<br><small style="font-size:0.7rem; color:var(--text-sec);">Safe for Restore</small>
+                </button>
+
+                <button class="menu-btn" onclick="document.getElementById('importFile').click()">
+                    <span class="menu-icon">📂</span> Restore Data (Import)<br><small style="font-size:0.7rem; color:var(--text-sec);">Load from Backup</small>
+                </button>
+                <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+
+                <hr style="width:100%; border: 0.5px solid var(--line-color);">
+
+                <!-- Reports -->
+                <button class="menu-btn" onclick="openPreview()">
+                    <span class="menu-icon">👁️</span> Preview Data
+                </button>
+
+                <button class="menu-btn" onclick="exportTextData()" style="color: var(--accent);">
+                    <span class="menu-icon">📄</span> Download Report (.TXT)<br><small style="font-size:0.7rem;">Shareable Format</small>
+                </button>
+
+                <hr style="width:100%; border: 0.5px solid var(--line-color);">
+
+                <!-- Reset -->
+                <button class="menu-btn" onclick="clearDataConfirm()" style="color: var(--danger); border-color: var(--danger);">
+                    <span class="menu-icon">🗑️</span> Clear All Data
+                </button>
+            </div>
+            <div style="text-align:center; margin-top:20px; color:var(--text-sec); font-size:0.7rem;">
+                AJ | Rail Data Collector V1.6
+            </div>
+        </div>
     </div>
 
-    <button class="modal-cancel" style="width: 100%; margin-top: 15px;" onclick="closeAdmin()">Close</button>
-  </div>
-</div>
+    <!-- PREVIEW MODAL -->
+    <div class="modal-overlay" id="previewModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="margin:0;">PREVIEW</h2>
+                <button class="close-btn" onclick="closeModal('previewModal')">✖</button>
+            </div>
+            <div id="previewArea" class="preview-box"></div>
+        </div>
+    </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast"></div>
+    <script>
+        // --- CONFIG ---
+        const stations = [
+            { code: 'KRPU', name: 'Koraput', km: '189/37', type: 'STATION' },
+            { code: 'MVF',  name: 'Manabar', km: '196/35', type: 'STATION' },
+            { code: 'JRT',  name: 'Jarati', km: '-', type: 'STATION' },
+            { code: 'MVG',  name: 'Maligura', km: '-', type: 'STATION' },
+            { code: 'T1',   name: 'Tunnel 1', km: '-', type: 'TUNNEL' },
+            { code: 'T2',   name: 'Tunnel 2', km: '-', type: 'TUNNEL' },
+            { code: 'CTS',  name: 'Chattariput', km: '224/17', type: 'STATION' },
+            { code: 'NS-1', name: 'Neutral Sec 1', km: '-', type: 'NS' },
+            { code: 'JYP',  name: 'Jeypore', km: '-', type: 'STATION' },
+            { code: 'DIR',  name: 'Dhanapur', km: '-', type: 'STATION' },
+            { code: 'NS-2', name: 'Neutral Sec 2', km: '-', type: 'NS' },
+            { code: 'G-01', name: 'Gate 01', km: '-', type: 'GATE' },
+            { code: 'KDPA', name: 'Khadapa', km: '-', type: 'STATION' },
+            { code: 'G-02', name: 'Gate 02', km: '-', type: 'GATE' },
+            { code: 'G-03', name: 'Gate 03', km: '-', type: 'GATE' },
+            { code: 'CJS',  name: 'Charamula Kusumi', km: '-', type: 'STATION' },
+            { code: 'KPRR', name: 'Kotapar Road', km: '-', type: 'STATION' },
+            { code: 'G-04', name: 'Gate 04', km: '-', type: 'GATE' },
+            { code: 'G-05', name: 'Gate 05', km: '-', type: 'GATE' },
+            { code: 'AGB',  name: 'Ambagaun', km: '-', type: 'STATION' },
+            { code: 'G-06', name: 'Gate 06', km: '-', type: 'GATE' },
+            { code: 'NS-3', name: 'Neutral Sec 3', km: '-', type: 'NS' },
+            { code: 'G-07', name: 'Gate 07', km: '-', type: 'GATE' },
+            { code: 'G-08', name: 'Gate 08', km: '-', type: 'GATE' },
+            { code: 'AGZ',  name: 'Amagura', km: '289/09', type: 'STATION' },
+            { code: 'G-09', name: 'Gate 09', km: '-', type: 'GATE' },
+            { code: 'G-10', name: 'Gate 10', km: '-', type: 'GATE' },
+            { code: 'G-11', name: 'Gate 11', km: '-', type: 'GATE' },
+            { code: 'G-12', name: 'Gate 12', km: '-', type: 'GATE' },
+            { code: 'NKX',  name: 'Nakti Semra', km: '-', type: 'STATION' },
+            { code: 'G-13', name: 'Gate 13', km: '-', type: 'GATE' },
+            { code: 'G-14', name: 'Gate 14 (S)', km: '-', type: 'GATE_SIG' },
+            { code: 'G-15', name: 'Gate 15 (S-UP)', km: '-', type: 'GATE_SIG' },
+            { code: 'JDB',  name: 'Jagdalpur', km: '-', type: 'STATION' },
+            { code: 'G-16', name: 'Gate 16 (S)', km: '-', type: 'GATE_SIG' },
+            { code: 'NS-4', name: 'Neutral Sec 4', km: '300/15', type: 'NS' },
+            { code: 'G-17', name: 'Gate 17', km: '-', type: 'GATE' },
+            { code: 'G-18', name: 'Gate 18', km: '-', type: 'GATE' },
+            { code: 'KMEZ', name: 'Kumhar Marenga', km: '-', type: 'STATION' },
+            { code: 'TPQ',  name: 'Tokapal', km: '-', type: 'STATION' },
+            { code: 'NS-5', name: 'Neutral Sec 5', km: '-', type: 'NS' },
+            { code: 'G-19', name: 'Gate 19', km: '-', type: 'GATE' },
+            { code: 'G-20', name: 'Gate 20 (S)', km: '-', type: 'GATE_SIG' },
+            { code: 'BDXX', name: 'Bade Arapur', km: '-', type: 'STATION' },
+            { code: 'G-21', name: 'Gate 21', km: '-', type: 'GATE' },
+            { code: 'G-22', name: 'Gate 22 (S)', km: '-', type: 'GATE_SIG' },
+            { code: 'NS-6', name: 'Neutral Sec 6', km: '-', type: 'NS' },
+            { code: 'G-23', name: 'Gate 23', km: '-', type: 'GATE' },
+            { code: 'G-24', name: 'Gate 24', km: '-', type: 'GATE' },
+            { code: 'DMK',  name: 'Dilmili', km: '-', type: 'STATION' },
+            { code: 'SZY',  name: 'Silak Jhori', km: '-', type: 'STATION' },
+            { code: 'NS-7', name: 'Neutral Sec 7', km: '-', type: 'NS' },
+            { code: 'KMSD', name: 'Kumar Sodra', km: '-', type: 'STATION' },
+            { code: 'NS-8', name: 'Neutral Sec 8', km: '-', type: 'NS' },
+            { code: 'KKLU', name: 'Kaklur', km: '-', type: 'STATION' },
+            { code: 'KWGN', name: 'Kawargaon', km: '-', type: 'STATION' },
+            { code: 'NS-9', name: 'Neutral Sec 9', km: '-', type: 'NS' },
+            { code: 'DPF',  name: 'Dabpal', km: '383/43', type: 'STATION' },
+            { code: 'GIZ',  name: 'Gidam', km: '394/33', type: 'STATION' },
+            { code: 'DWZ',  name: 'Dantewara', km: '-', type: 'STATION' },
+            { code: 'G-25', name: 'Gate 25 (S)', km: '-', type: 'GATE_SIG' },
+            { code: 'NS-10',name: 'Neutral Sec 10', km: '-', type: 'NS' },
+            { code: 'KMLR', name: 'Kamlur', km: '-', type: 'STATION' },
+            { code: 'BHNS', name: 'Bhansi', km: '-', type: 'STATION' },
+            { code: 'BCHL', name: 'Bacheli', km: '-', type: 'STATION' },
+            { code: 'KRDL', name: 'Kirandul', km: '-', type: 'STATION' }
+        ];
 
-<script>
-// ── DATA ─────────────────────────────────────────────────────────────────────
-const STATIONS_RAW = [
-  {"station":"Manabar","lat":18.840492,"lon":82.695571, "type":"STN", "dir":"BOTH"},
-  {"station":"Jarati","lat":18.891874,"lon":82.665381, "type":"STN", "dir":"BOTH"},
-  {"station":"Maligura","lat":18.953505,"lon":82.638622, "type":"STN", "dir":"BOTH"},
-  {"station":"Chattariput","lat":18.922689,"lon":82.590097, "type":"STN", "dir":"BOTH"},
-  {"station":"Jeypore","lat":18.895231,"lon":82.555724, "type":"STN", "dir":"BOTH"},
-  {"station":"Dhanapur","lat":18.942042,"lon":82.513883, "type":"STN", "dir":"BOTH"},
-  {"station":"Khadapa","lat":18.982736,"lon":82.468617, "type":"STN", "dir":"BOTH"},
-  {"station":"Charamula Kusumi","lat":19.01612,"lon":82.415111, "type":"STN", "dir":"BOTH"},
-  {"station":"Kotapar Road","lat":19.041657,"lon":82.307835, "type":"STN", "dir":"BOTH"},
-  {"station":"Ambagoan","lat":19.061753,"lon":82.241258, "type":"STN", "dir":"BOTH"},
-  {"station":"Amagura","lat":19.068659,"lon":82.147901, "type":"STN", "dir":"BOTH"},
-  {"station":"Nakti Semra","lat":19.061776,"lon":82.073807, "type":"STN", "dir":"BOTH"},
-  {"station":"Jagdalpur","lat":19.066038,"lon":82.01414, "type":"STN", "dir":"BOTH"},
-  {"station":"Kumhar Marenga","lat":19.034652,"lon":81.946605, "type":"STN", "dir":"BOTH"},
-  {"station":"Tokapal","lat":19.006474,"lon":81.878587, "type":"STN", "dir":"BOTH"},
-  {"station":"Bade Arapur","lat":19.012629,"lon":81.828722, "type":"STN", "dir":"BOTH"},
-  {"station":"Dilmili","lat":18.987838,"lon":81.737704, "type":"STN", "dir":"BOTH"},
-  {"station":"Silak Jhori","lat":18.977709,"lon":81.67065, "type":"STN", "dir":"BOTH"},
-  {"station":"Kumar Sodra","lat":18.919577,"lon":81.686003, "type":"STN", "dir":"BOTH"},
-  {"station":"Kaklur","lat":18.883297,"lon":81.620983, "type":"STN", "dir":"BOTH"},
-  {"station":"Kawargaon","lat":18.896378,"lon":81.537849, "type":"STN", "dir":"BOTH"},
-  {"station":"Dabpal","lat":18.928082,"lon":81.488991, "type":"STN", "dir":"BOTH"},
-  {"station":"Gidam","lat":18.936727,"lon":81.412305, "type":"STN", "dir":"BOTH"},
-  {"station":"Dantewara","lat":18.908166,"lon":81.355817, "type":"STN", "dir":"BOTH"},
-  {"station":"Bacheli","lat":18.703747,"lon":81.238185, "type":"STN", "dir":"BOTH"}
-];
+        const ASSETS_STATION = [
+            { id: 'DIST', label: 'DISTANT' },
+            { id: 'HOME', label: 'HOME' },
+            { id: 'BLD',  label: 'STN BLD' },
+            { id: 'STR',  label: 'STARTER' },
+            { id: 'ADV',  label: 'ADV STR' }
+        ];
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
-let direction = null;
-let stations = [];
-let userLat = null, userLon = null;
-let alarms = {}; // { stationIndex: distanceKm }
-let watchId = null;
-let alarmTarget = null;
-let firedAlarms = new Set();
-let SPEED_KMH = 40; 
-let audioCtx = null;
-let alarmInterval = null;
+        const ASSETS_NS = [
+            { id: '500M', label: '500M WARN' },
+            { id: '250M', label: '250M BRD' },
+            { id: 'OPEN', label: 'OPEN DJ' },
+            { id: 'PT',   label: 'NS POINT' },
+            { id: 'CLOSE',label: 'CLOSE DJ' }
+        ];
+        
+        const ASSETS_TUNNEL = [
+             { id: 'ENT', label: 'ENTRY' },
+             { id: 'EXIT', label: 'EXIT' }
+        ];
 
-// Audio context unlock
-function initAudio() {
-  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-}
+        const ASSETS_GATE = [
+            { id: 'LOC', label: 'GATE LOCATION' }
+        ];
 
-function playBeep() {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.type = 'square';
-  osc.frequency.value = 880; 
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-  osc.start();
-  osc.stop(audioCtx.currentTime + 0.5);
-}
+        const ASSETS_GATE_SIG = [
+            { id: 'DIST', label: 'GATE DISTANT' },
+            { id: 'HOME', label: 'GATE HOME' },
+            { id: 'LOC',  label: 'GATE LOCATION' }
+        ];
 
-function stopAlarm() {
-  if (alarmInterval) clearInterval(alarmInterval);
-  document.getElementById('active-alarm-ui').style.display = 'none';
-  if ('vibrate' in navigator) navigator.vibrate(0);
-}
+        // Specific Signals for unique stations
+        const ASSETS_KPRR_UP = [
+            { id: 'DIST', label: 'DISTANT' }, { id: 'HOME', label: 'HOME' },
+            { id: 'IHOME', label: 'INNER HOME' }, { id: 'BLD', label: 'STN BLD' },
+            { id: 'STR', label: 'STARTER' }, { id: 'ADV', label: 'ADV STR' }
+        ];
 
-// ── HELPERS ───────────────────────────────────────────────────────────────────
-function haversine(lat1, lon1, lat2, lon2) {
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
+        const ASSETS_BCHL_DN = [
+            { id: 'DIST', label: 'DISTANT' }, { id: 'HOME', label: 'HOME' },
+            { id: 'BLD', label: 'STN BLD' }, { id: 'STR', label: 'STARTER' },
+            { id: 'INT_STR', label: 'INT STARTER' }, { id: 'ADV', label: 'ADV STR' }
+        ];
 
-function closestStation(lat, lon) {
-  let minDist = Infinity, idx = 0;
-  stations.forEach((s, i) => {
-    const d = haversine(lat, lon, s.lat, s.lon);
-    if (d < minDist) { minDist = d; idx = i; }
-  });
-  return { idx, dist: minDist };
-}
+        const ASSETS_KRPU_UP = [
+            { id: 'DIST', label: 'DISTANT' }, { id: 'HOME', label: 'HOME' },
+            { id: 'BLD', label: 'STN BLD' }, { id: 'STR', label: 'STARTER' },
+            { id: 'INT_STR', label: 'INT STARTER' }, { id: 'ADV', label: 'ADV STR' }
+        ];
 
-let currentTargetIdx = -1;
+        let currentDirection = 'UP';
+        let currentPos = null;
+        let capturedData = JSON.parse(localStorage.getItem('rail_kk_data')) || {};
 
-function nextStation(lat, lon) {
-  let bestSegmentEndIdx = 0;
-  let minError = Infinity;
+        // --- GPS Logic ---
+        function startGPS() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    (position) => {
+                        currentPos = position.coords;
+                        const gpsEl = document.getElementById('gpsStatus');
+                        gpsEl.innerText = "GPS ACTIVE (ACC: " + Math.round(position.coords.accuracy) + "m)";
+                        gpsEl.classList.remove('blink');
+                        gpsEl.classList.add('gps-active');
+                        document.getElementById('currentLatLong').innerHTML = 
+                            position.coords.latitude.toFixed(6) + "<br>" + position.coords.longitude.toFixed(6);
+                    },
+                    (err) => { document.getElementById('gpsStatus').innerText = "GPS Error: " + err.message; },
+                    { enableHighAccuracy: true, maximumAge: 0 }
+                );
+            } else { alert("Geolocation not supported"); }
+        }
 
-  // 1. Identify current segment using distance-sum logic
-  for (let i = 0; i < stations.length - 1; i++) {
-    let d1 = haversine(lat, lon, stations[i].lat, stations[i].lon);
-    let d2 = haversine(lat, lon, stations[i+1].lat, stations[i+1].lon);
-    let segmentLine = haversine(stations[i].lat, stations[i].lon, stations[i+1].lat, stations[i+1].lon);
-    
-    let error = (d1 + d2) - segmentLine;
-    if (error < minError) {
-      minError = error;
-      bestSegmentEndIdx = i + 1;
-    }
-  }
+        // --- UI Functions ---
+        function setDirection(dir) {
+            currentDirection = dir;
+            document.getElementById('btn-UP').className = `dir-btn ${dir === 'UP' ? 'active' : ''}`;
+            document.getElementById('btn-DN').className = `dir-btn ${dir === 'DN' ? 'active' : ''}`;
+            renderTimeline();
+        }
 
-  // 2. Boundary Check: Handling the very first station
-  let distToFirst = haversine(lat, lon, stations[0].lat, stations[0].lon);
-  if (bestSegmentEndIdx === 1) {
-      let d01 = haversine(stations[0].lat, stations[0].lon, stations[1].lat, stations[1].lon);
-      let dU1 = haversine(lat, lon, stations[1].lat, stations[1].lon);
-      if (distToFirst + d01 > dU1 && distToFirst < 5) {
-          bestSegmentEndIdx = 0; 
-      }
-  }
+        function renderTimeline() {
+            const list = document.getElementById('stationList');
+            list.innerHTML = '';
 
-  // 3. Strict Forward Lock: Ensure currentTargetIdx only moves ahead
-  if (bestSegmentEndIdx > currentTargetIdx) {
-    currentTargetIdx = bestSegmentEndIdx;
-  }
+            let displayStations = [...stations];
+            if(currentDirection === 'DN') {
+                displayStations.reverse();
+            }
 
-  const finalDist = haversine(lat, lon, stations[currentTargetIdx].lat, stations[currentTargetIdx].lon);
-  return { idx: currentTargetIdx, dist: finalDist };
-}
+            displayStations.forEach(stn => {
+                const el = document.createElement('div');
+                el.className = `station-card`;
+                el.onclick = () => openStation(stn);
+                
+                const statusClass = getStatusClass(stn.code); 
+                el.classList.add(statusClass);
 
-function showToast(msg, type='') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast ' + type + ' show';
-  setTimeout(() => t.className = 'toast', 3200);
-}
+                el.innerHTML = `
+                    <div class="station-dot"></div>
+                    <div class="stn-header">
+                        <span class="stn-name">${stn.name}</span>
+                        <span class="stn-km">${stn.km}</span>
+                    </div>
+                    <div class="stn-type">${stn.type}</div>
+                    <div class="data-badges">
+                        ${getBadgesHtml(stn.code, stn.type)}
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+        }
 
-// ── DIRECTION SCREEN ──────────────────────────────────────────────────────────
-function selectDir(dir) {
-  direction = dir;
-  document.getElementById('card-up').classList.toggle('selected', dir === 'UP');
-  document.getElementById('card-down').classList.toggle('selected', dir === 'DOWN');
-  document.getElementById('start-btn').disabled = false;
-}
+        function getStatusClass(code) {
+            const prefix = `${code}_${currentDirection}_`;
+            const keys = Object.keys(capturedData).filter(k => k.startsWith(prefix));
+            return keys.length > 0 ? 'saved-some' : 'empty';
+        }
 
-function startTracking() {
-  initAudio();
-  if (!direction) return;
-  localStorage.setItem('rail_dir', direction);
-  stations = STATIONS_RAW.filter(s => s.dir === 'BOTH' || s.dir === direction);
-  if (direction === 'DOWN') stations.reverse();
-  document.getElementById('screen-direction').classList.remove('active');
-  document.getElementById('screen-tracker').classList.add('active');
-  document.getElementById('dir-badge').textContent = direction === 'UP' ? 'UP ↑' : 'DOWN ↓';
-  document.getElementById('prog-from').textContent = stations[0].station;
-  document.getElementById('prog-to').textContent = stations[stations.length-1].station;
-  
-  const savedAlarms = localStorage.getItem('rail_alarms');
-  if(savedAlarms) alarms = JSON.parse(savedAlarms);
+        function getBadgesHtml(code, type) {
+            let assets = (type === 'NS') ? ASSETS_NS : 
+                         (type === 'TUNNEL') ? ASSETS_TUNNEL : 
+                         (type === 'GATE') ? ASSETS_GATE :
+                         (type === 'GATE_SIG') ? ASSETS_GATE_SIG : ASSETS_STATION;
 
-  renderStationsList();
-  startGPS();
-  setInterval(updateUI, 3000);
-}
+            // --- One-way Signal Gate Logic ---
+            if (code === 'G-25' && currentDirection === 'UP') assets = ASSETS_GATE;
+            if (code === 'G-15' && currentDirection === 'DN') assets = ASSETS_GATE;
 
-window.onload = () => {
-  const savedDir = localStorage.getItem('rail_dir');
-  if(savedDir) {
-    selectDir(savedDir);
-    setTimeout(startTracking, 500);
-  }
-};
+            // --- Custom Station Signals Logic ---
+            if (code === 'KPRR' && currentDirection === 'UP') assets = ASSETS_KPRR_UP;
+            if (code === 'BCHL' && currentDirection === 'DN') assets = ASSETS_BCHL_DN;
+            if (code === 'KRPU' && currentDirection === 'UP') assets = ASSETS_KRPU_UP;
 
-function goBack() {
-  if (watchId) navigator.geolocation.clearWatch(watchId);
-  localStorage.removeItem('rail_dir');
-  localStorage.removeItem('rail_alarms');
-  document.getElementById('screen-tracker').classList.remove('active');
-  document.getElementById('screen-direction').classList.add('active');
-  alarms = {}; firedAlarms = new Set();
-  location.reload();
-}
+            return assets.map(a => {
+                const key = `${code}_${currentDirection}_${a.id}`;
+                return `<span class="badge ${capturedData[key] ? 'done' : ''}">${a.id}</span>`;
+            }).join('');
+        }
 
-// ── GPS ───────────────────────────────────────────────────────────────────────
-function startGPS() {
-  if (!navigator.geolocation) {
-    document.getElementById('gps-text').textContent = 'GPS N/A';
-    return;
-  }
-  watchId = navigator.geolocation.watchPosition(
-    pos => {
-      userLat = pos.coords.latitude;
-      userLon = pos.coords.longitude;
-      document.getElementById('gps-dot').classList.add('active');
-      document.getElementById('gps-text').textContent = 'GPS ON';
-      updateUI();
-    },
-    err => {
-      document.getElementById('gps-text').textContent = 'GPS ERR';
-      // Use demo position near Jeypore for testing
-      if (!userLat) { userLat = 18.895231; userLon = 82.555724; updateUI(); }
-    },
-    { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
-  );
-}
+        // --- Modal & Saving ---
+        function openStation(stn) {
+            const modal = document.getElementById('signalModal');
+            document.getElementById('modalTitle').innerText = `${stn.name} (${currentDirection})`;
+            
+            let assets = (stn.type === 'NS') ? ASSETS_NS : 
+                         (stn.type === 'TUNNEL') ? ASSETS_TUNNEL : 
+                         (stn.type === 'GATE') ? ASSETS_GATE :
+                         (stn.type === 'GATE_SIG') ? ASSETS_GATE_SIG : ASSETS_STATION;
 
-// ── UI UPDATE ─────────────────────────────────────────────────────────────────
-function updateUI() {
-  if (userLat === null) return;
+// --- One-way Signal Gate Logic ---
+            if (stn.code === 'G-25' && currentDirection === 'UP') assets = ASSETS_GATE;
+            if (stn.code === 'G-15' && currentDirection === 'DN') assets = ASSETS_GATE;
 
-  const { idx: nextIdx, dist } = nextStation(userLat, userLon);
-  const next = stations[nextIdx];
-  const eta = Math.round(dist / SPEED_KMH * 60);
-  const distStr = dist < 1 ? (dist * 1000).toFixed(0) + ' m' : dist.toFixed(1);
+            // --- Custom Station Signals Logic ---
+            if (stn.code === 'KPRR' && currentDirection === 'UP') assets = ASSETS_KPRR_UP;
+            if (stn.code === 'BCHL' && currentDirection === 'DN') assets = ASSETS_BCHL_DN;
+            if (stn.code === 'KRPU' && currentDirection === 'UP') assets = ASSETS_KRPU_UP;
 
-  document.getElementById('next-name').textContent = next.station;
-  document.getElementById('next-dist').innerHTML = `${(dist*1000).toFixed(0)}<span> m</span>`;
-  document.getElementById('next-eta').textContent = `~${eta} min`;
-  document.getElementById('current-loc').textContent = `${userLat.toFixed(4)}, ${userLon.toFixed(4)}`;
+            const grid = document.getElementById('signalGrid');
+            grid.innerHTML = '';
+            
+            assets.forEach(asset => {
+                const key = `${stn.code}_${currentDirection}_${asset.id}`;
+                const savedVal = capturedData[key];
+                const savedKM = (savedVal && savedVal.manualKm) ? savedVal.manualKm : '';
+                
+                const row = document.createElement('div');
+                row.className = `signal-row ${savedVal ? 'captured' : ''}`;
+                
+                row.innerHTML = `
+                    <div class="row-top">
+                        <span class="signal-label">${asset.label}</span>
+                        <div class="coord-display">${savedVal ? savedVal.lat + ', ' + savedVal.lng : ''}</div>
+                    </div>
+                    <div class="row-bottom">
+                        <input type="text" id="km-${key}" class="km-input" placeholder="KM" value="${savedKM}" onclick="event.stopPropagation()" oninput="autoSaveKm('${key}', this.value)">
+                        <button class="capture-btn ${savedVal ? 'active' : ''}" onclick="saveLocation('${key}', this, event)">
+                            ${savedVal ? '✅ UPDATE' : '📍 SAVE'}
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(row);
+            });
+            modal.classList.add('open');
+        }
 
-  // Alarm status
-  const activeAlarms = Object.keys(alarms).length;
-  document.getElementById('alarm-status').textContent = activeAlarms > 0 ? `${activeAlarms} Alarm${activeAlarms>1?'s':''} Set` : 'No Alarm';
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('open');
+            renderTimeline();
+        }
 
-  // Progress
-  const totalDist = haversine(stations[0].lat, stations[0].lon, stations[stations.length-1].lat, stations[stations.length-1].lon);
-  const traveled = haversine(stations[0].lat, stations[0].lon, userLat, userLon);
-  document.getElementById('progress-fill').style.width = Math.min(100, traveled/totalDist*100) + '%';
+        // NEW: Auto-save KM as you type (No button needed)
+        function autoSaveKm(key, val) {
+            // If GPS data already exists for this signal, update the KM immediately
+            if (capturedData[key]) {
+                capturedData[key].manualKm = val.trim();
+                localStorage.setItem('rail_kk_data', JSON.stringify(capturedData));
+            }
+            // If GPS data does NOT exist yet, we don't save to storage yet.
+            // The value stays in the input box and will be saved when you click "SAVE GPS".
+        }
 
-  // Check alarms
-  checkAlarms(nextIdx, dist);
+        function saveLocation(key, btnElement, e) {
+            e.stopPropagation();
+            const kmInput = document.getElementById(`km-${key}`);
+            const manualKm = kmInput.value.trim();
 
-  renderStationsList(nextIdx);
-  drawMap(nextIdx);
-}
+            if (!currentPos) { alert("Wait for GPS..."); return; }
 
-function checkAlarms(nextIdx, distToNext) {
-  Object.entries(alarms).forEach(([idxStr, alarmDist]) => {
-    const idx = parseInt(idxStr);
-    const stDist = haversine(userLat, userLon, stations[idx].lat, stations[idx].lon);
-    
-    // Agar station pass ho gaya (dist > 1km and it was a target), to fired list mein daal do
-    if (idx < nextIdx && !firedAlarms.has(idx)) {
-        firedAlarms.add(idx);
-    }
+            // --- SAFETY LOGIC START ---
+            // Check if data exists AND confirmation is not yet pending
+            if (capturedData[key] && !btnElement.dataset.confirm) {
+                // First Tap: Ask for confirmation
+                const originalText = btnElement.innerText;
+                btnElement.innerText = "⚠️ TAP AGAIN";
+                btnElement.style.background = "#FF9800"; // Orange Warning
+                btnElement.style.color = "#000";
+                btnElement.dataset.confirm = "true";
 
-    if (stDist <= alarmDist && !firedAlarms.has(idx)) {
-      firedAlarms.add(idx);
-      
-      // Safety: Purana koi bhi interval chal raha ho toh pehle use khatam karo
-      if (alarmInterval) clearInterval(alarmInterval);
-      
-      showToast(`🔔 ${stations[idx].station} AA GAYA!`, 'alarm');
-      
-      const doVibrate = document.getElementById('pref-vibrate').checked;
-      const doBeep = document.getElementById('pref-beep').checked;
-      
-      const alarmUI = document.getElementById('active-alarm-ui');
-      alarmUI.style.display = 'block';
-      alarmUI.innerHTML = `<div style="font-weight: bold; font-size: 1.1rem;">🔔 ${stations[idx].station} AA GAYA!</div>
-                           <button onclick="stopAlarm()" style="margin-top:10px; background: #000; color: #fff; border:none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;">STOP ALARM</button>`;
+                // Reset after 3 seconds if not clicked again
+                setTimeout(() => {
+                    // Only revert if still in confirm mode
+                    if (btnElement.dataset.confirm) {
+                        btnElement.innerText = "✅ UPDATE";
+                        btnElement.style.background = ""; // Revert to CSS default
+                        btnElement.style.color = "";
+                        delete btnElement.dataset.confirm;
+                    }
+                }, 3000);
+                return; // STOP HERE - Do not save yet
+            }
+            // --- SAFETY LOGIC END ---
 
-      alarmInterval = setInterval(() => {
-        if (doVibrate && 'vibrate' in navigator) navigator.vibrate([400, 200, 400]);
-        if (doBeep) playBeep();
-      }, 1500);
-    }
-  });
-}
+            const dataPoint = {
+                lat: parseFloat(currentPos.latitude.toFixed(6)),
+                lng: parseFloat(currentPos.longitude.toFixed(6)),
+                acc: currentPos.accuracy,
+                ts: new Date().toISOString(),
+                manualKm: manualKm
+            };
 
-// ── STATIONS LIST ─────────────────────────────────────────────────────────────
-function renderStationsList(nextIdx) {
-  if (nextIdx === undefined) nextIdx = -1;
-  const list = document.getElementById('stations-list');
-  list.innerHTML = '';
-  stations.forEach((s, i) => {
-    const isPassed = i < nextIdx;
-    const isNext = i === nextIdx;
-    const dist = userLat !== null ? haversine(userLat, userLon, s.lat, s.lon) : null;
-    const hasAlarm = alarms[i] !== undefined;
+            capturedData[key] = dataPoint;
+            localStorage.setItem('rail_kk_data', JSON.stringify(capturedData));
 
-    const row = document.createElement('div');
-    row.className = 'station-row' + (isPassed ? ' passed' : '') + (isNext ? ' current' : '');
+            const row = btnElement.closest('.signal-row');
+            row.classList.add('captured');
+            row.querySelector('.coord-display').innerText = `${dataPoint.lat}, ${dataPoint.lng}`;
+            
+            // Success State
+            btnElement.classList.add('active');
+            btnElement.innerText = "✅ UPDATE";
+            
+            // Clean up confirmation styles
+            btnElement.style.background = ""; 
+            btnElement.style.color = "";
+            delete btnElement.dataset.confirm;
 
-    let dotClass = 'upcoming';
-    if (isPassed) dotClass = 'passed';
-    else if (isNext) dotClass = 'next';
-    if (hasAlarm) dotClass = 'alarmed';
+            // Vibration for confirmation (Phone Haptic)
+            if(navigator.vibrate) navigator.vibrate([50, 50]);
+        }
 
-    const distText = dist !== null ? `${(dist*1000).toFixed(0)} m` : '—';
+        // --- SETTINGS MENU FUNCTIONS ---
+        function openSettings() { document.getElementById('settingsModal').classList.add('open'); }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('light-mode');
+        }
 
-    row.innerHTML = `
-      <div class="station-dot ${dotClass}"></div>
-      <div class="station-info">
-        <div class="station-name">${s.station}</div>
-        <div class="station-dist">${distText}</div>
-      </div>
-      <button class="alarm-btn ${hasAlarm ? 'set' : ''}" onclick="openAlarmModal(${i})">
-        ${hasAlarm ? '🔔' : '🔕'}
-      </button>
-    `;
-    list.appendChild(row);
-  });
-}
+        // 1. Export Report (.TXT)
+        function exportTextData() {
+            if(Object.keys(capturedData).length === 0) { alert("No data!"); return; }
 
-// ── MINI MAP ──────────────────────────────────────────────────────────────────
-function drawMap(nextIdx) {
-  const canvas = document.getElementById('map-canvas');
-  const ctx = canvas.getContext('2d');
-  canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-  canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  const W = canvas.offsetWidth, H = canvas.offsetHeight;
+            let content = "KK LINE ROUTE REPORT\nGenerated: " + new Date().toLocaleString() + "\n========================\n\n";
+            content += "Format: Station | Signal | KM | Lat, Long\n\n";
 
-  const lats = stations.map(s => s.lat);
-  const lons = stations.map(s => s.lon);
-  const minLat = Math.min(...lats), maxLat = Math.max(...lats);
-  const minLon = Math.min(...lons), maxLon = Math.max(...lons);
-  const pad = 20;
+            ['UP', 'DN'].forEach(dir => {
+                content += `>>> ${dir} DIRECTION <<<\n------------------------\n`;
+                let stns = (dir === 'UP') ? stations : [...stations].reverse();
+                
+                stns.forEach(stn => {
+                    let assets = (stn.type === 'NS') ? ASSETS_NS : (stn.type === 'TUNNEL') ? ASSETS_TUNNEL : ASSETS_STATION;
+                    assets.forEach(asset => {
+                        const key = `${stn.code}_${dir}_${asset.id}`;
+                        if(capturedData[key]) {
+                            const d = capturedData[key];
+                            const kmStr = d.manualKm || "-";
+                            content += `${stn.name.padEnd(12)} | ${asset.label.padEnd(10)} | ${kmStr.padEnd(8)} | ${d.lat}, ${d.lng}\n`;
+                        }
+                    });
+                });
+                content += "\n";
+            });
 
-  const toX = lon => pad + (lon - minLon) / (maxLon - minLon) * (W - pad*2);
-  const toY = lat => H - pad - (lat - minLat) / (maxLat - minLat) * (H - pad*2);
+            const blob = new Blob([content], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = window.URL.createObjectURL(blob);
+            a.download = "KK_Route_Report.txt";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
 
-  ctx.clearRect(0, 0, W, H);
+        // 2. Backup (.JSON)
+        function downloadBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(capturedData));
+            const a = document.createElement('a');
+            a.href = dataStr; a.download = "KK_Backup_" + new Date().toISOString().slice(0,10) + ".json";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
 
-  // Track line
-  ctx.beginPath();
-  stations.forEach((s, i) => {
-    i === 0 ? ctx.moveTo(toX(s.lon), toY(s.lat)) : ctx.lineTo(toX(s.lon), toY(s.lat));
-  });
-  ctx.strokeStyle = '#2a2f3e';
-  ctx.lineWidth = 3;
-  ctx.stroke();
+        // 3. Restore (Import)
+        function importData(input) {
+            const file = input.files[0];
+            if(!file) return;
 
-  // Traveled portion
-  if (nextIdx > 0 && userLat !== null) {
-    ctx.beginPath();
-    ctx.moveTo(toX(stations[0].lon), toY(stations[0].lat));
-    for (let i = 1; i < nextIdx; i++) ctx.lineTo(toX(stations[i].lon), toY(stations[i].lat));
-    ctx.lineTo(toX(userLon), toY(userLat));
-    ctx.strokeStyle = '#f5a623';
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if(confirm("Restore data? This will merge with existing data.")) {
+                        capturedData = { ...capturedData, ...imported };
+                        localStorage.setItem('rail_kk_data', JSON.stringify(capturedData));
+                        alert("Data restored successfully!");
+                        renderTimeline();
+                        closeModal('settingsModal');
+                    }
+                } catch(err) {
+                    alert("Invalid JSON file!");
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; // Reset input
+        }
 
-  // Station dots
-  stations.forEach((s, i) => {
-    ctx.beginPath();
-    ctx.arc(toX(s.lon), toY(s.lat), i === nextIdx ? 5 : 3, 0, Math.PI*2);
-    if (i < nextIdx) ctx.fillStyle = '#f5a623';
-    else if (i === nextIdx) { ctx.fillStyle = '#fff'; ctx.shadowColor = '#f5a623'; ctx.shadowBlur = 8; }
-    else ctx.fillStyle = '#4a5068';
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    // Label for next station
-    if (i === nextIdx) {
-      ctx.fillStyle = '#f5a623';
-      ctx.font = `bold 10px Rajdhani`;
-      ctx.fillText(s.station, toX(s.lon) + 7, toY(s.lat) + 4);
-    }
-  });
+        // 4. Preview
+        function openPreview() {
+            const area = document.getElementById('previewArea');
+            area.innerText = Object.keys(capturedData).length ? JSON.stringify(capturedData, null, 2) : "No data captured yet.";
+            document.getElementById('previewModal').classList.add('open');
+        }
 
-  // User location
-  if (userLat !== null) {
-    const ux = toX(userLon), uy = toY(userLat);
-    ctx.beginPath();
-    ctx.arc(ux, uy, 7, 0, Math.PI*2);
-    ctx.fillStyle = '#4a9eff';
-    ctx.shadowColor = '#4a9eff';
-    ctx.shadowBlur = 12;
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.arc(ux, uy, 4, 0, Math.PI*2);
-    ctx.fillStyle = '#fff';
-    ctx.fill();
-  }
-}
+        // 5. Clear
+        function clearDataConfirm(){
+            if(confirm("DELETE ALL DATA?")) {
+                localStorage.removeItem('rail_kk_data');
+                capturedData = {}; renderTimeline();
+                alert("Data cleared.");
+            }
+        }
 
-// ── ALARM MODAL ───────────────────────────────────────────────────────────────
-function openAlarmModal(idx) {
-  alarmTarget = idx;
-  const modal = document.getElementById('alarm-modal');
-  const sub = document.getElementById('modal-sub');
-  if (idx === -1) {
-    sub.textContent = 'Sabhi stations ke liye alarm set hoga';
-  } else {
-    const hasAlarm = alarms[idx] !== undefined;
-    sub.textContent = hasAlarm
-      ? `${stations[idx].station} — Alarm update karo`
-      : `${stations[idx].station} — Alarm set karo`;
-    if (hasAlarm) document.getElementById('alarm-dist-input').value = (alarms[idx] * 1000).toFixed(0);
-  }
-  modal.classList.add('open');
-}
+        // Init
+        renderTimeline();
+        startGPS();
 
-function closeModal() {
-  document.getElementById('alarm-modal').classList.remove('open');
-  alarmTarget = null;
-}
-
- function confirmAlarm() {
-  const distMeters = parseFloat(document.getElementById('alarm-dist-input').value);
-  if (isNaN(distMeters) || distMeters <= 0) { showToast('Valid distance dalo!'); return; }
-  const distKm = distMeters / 1000;
-
-  if (alarmTarget === -1) {
-    stations.forEach((_, i) => { alarms[i] = distKm; });
-    showToast(`✅ Sabhi ke liye ${distMeters}m pehle alarm set!`);
-  } else {
-    alarms[alarmTarget] = distKm;
-    showToast(`✅ ${stations[alarmTarget].station} — ${distMeters}m pehle alarm set!`);
-  }
-  localStorage.setItem('rail_alarms', JSON.stringify(alarms));
-  closeModal();
-  firedAlarms = new Set();
-  const { idx: nextIdx } = userLat !== null ? nextStation(userLat, userLon) : { idx: -1 };
-  renderStationsList(nextIdx);
-}
-
-function openAdmin() {
-  const modal = document.getElementById('admin-modal');
-  const select = document.getElementById('add-after-idx');
-  select.innerHTML = '<option value="-1">Sabse Shuru Mein (Manabar se pehle)</option>';
-  STATIONS_RAW.forEach((s, i) => {
-    select.innerHTML += `<option value="${i}">${s.station}</option>`;
-  });
-  modal.classList.add('open');
-}
-
-function closeAdmin() {
-  document.getElementById('admin-modal').classList.remove('open');
-  document.getElementById('export-area').style.display = 'none';
-}
-
-function exportNewCode() {
-  const name = document.getElementById('new-stn-name').value;
-  const lat = parseFloat(document.getElementById('new-stn-lat').value);
-  const lon = parseFloat(document.getElementById('new-stn-lon').value);
-  const afterIdx = parseInt(document.getElementById('add-after-idx').value);
-
-  if (!name || isNaN(lat) || isNaN(lon)) {
-    alert("Saari details sahi se bhariye!");
-    return;
-  }
-
-  // Create deep copy of current stations
-  let updatedList = JSON.parse(JSON.stringify(STATIONS_RAW));
-  const type = document.getElementById('new-stn-type').value;
-  const dir = document.getElementById('new-stn-dir').value;
-  const newStn = { "station": name, "lat": lat, "lon": lon, "type": type, "dir": dir };
-
-  // Insert at correct position
-  updatedList.splice(afterIdx + 1, 0, newStn);
-
-  const codeOutput = "const STATIONS_RAW = " + JSON.stringify(updatedList, null, 2) + ";";
-  document.getElementById('code-output').value = codeOutput;
-  document.getElementById('export-area').style.display = 'block';
-}
-
-function copyCode() {
-  const copyText = document.getElementById('code-output');
-  copyText.select();
-  document.execCommand("copy");
-  showToast("Code Copy Ho Gaya! Ab ise HTML mein replace karein.");
-}
-
-// Close Admin on overlay click
-document.getElementById('admin-modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) closeAdmin();
-});
-</script>
+    </script>
 </body>
 </html>
