@@ -646,10 +646,20 @@
 
         // 2. Backup (.JSON)
         function downloadBackup() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(capturedData));
+            if (Object.keys(capturedData).length === 0) { alert("No data to backup!"); return; }
+            
+            const jsonString = JSON.stringify(capturedData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
             const a = document.createElement('a');
-            a.href = dataStr; a.download = "KK_Backup_" + new Date().toISOString().slice(0,10) + ".json";
-            document.body.appendChild(a); a.click(); a.remove();
+            a.href = url; 
+            a.download = "KK_Backup_" + new Date().toISOString().slice(0,10) + ".json";
+            document.body.appendChild(a); 
+            a.click(); 
+            a.remove();
+            
+            URL.revokeObjectURL(url); // मेमोरी क्लीन करने के लिए
         }
 
         // 3. Restore (Import)
